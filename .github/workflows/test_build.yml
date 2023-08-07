@@ -1,0 +1,26 @@
+# More GitHub Actions for Azure: https://github.com/Azure/actions
+name: Check images can be built
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    # Use a matrix to run for "controller", "status", and "usage" functions
+    # https://docs.github.com/en/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
+    strategy:
+      matrix:
+        function: [controller, usage, status]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Build function
+        run: |
+          docker build ${{ matrix.function }}_function
