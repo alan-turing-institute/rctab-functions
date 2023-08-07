@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "rctab-usage-function"
-version = "0.1.0"
+version = "0.1.0" # Version is indicated in the github release notes: https://github.com/alan-turing-institute/rctab-functions/releases
 description = "Function app to collect usage data"
 authors = []
 
