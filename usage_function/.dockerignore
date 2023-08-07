@@ -1,0 +1,9 @@
+# Everything...
+*
+
+# ...except for the bare necessities
+!poetry.lock
+!pyproject.toml
+!usage/*.py
+!usage/function.json
+!utils/*.py
