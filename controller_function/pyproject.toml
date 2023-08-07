@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "rctab-controller-function"
-version = "0.1.0"
+version = "0.1.0"  # Do not change
 description = "Function app to control (enable/disable) Azure subscriptions"
 authors = []
 

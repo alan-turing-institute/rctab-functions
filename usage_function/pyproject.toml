@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "rctab-usage-function"
-version = "0.1.0"
+version = "0.1.0"  # Do not change
 description = "Function app to collect usage data"
 authors = []
 
