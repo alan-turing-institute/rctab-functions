@@ -1,0 +1,23 @@
+# Secret, bulky or irrelevant files/folders
+.DS_Store
+.coverage
+.env
+.git*
+.idea
+.mypy_cache
+.pre-commit-config.yaml
+.ssh
+.venv
+.vscode
+
+# Local settings
+local.settings.json
+
+# Unit tests
+tests
+
+# Deployment code
+infrastructure
+
+# Temporary vim files
+*.swp
