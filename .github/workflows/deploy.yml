@@ -42,5 +42,5 @@ jobs:
 
       - name: Build and push function
         run: |
-          docker build ${{ matrix.function }}_function -t turingrc//rctab-${{ matrix.function }}:${{ env.CURRENT_RELEASE }} -t turingrc//rctab-${{ matrix.function }}:${{ env.MAJOR_VERSION_NUMBER }}.latest
+          docker build ${{ matrix.function }}_function -t turingrc/rctab-${{ matrix.function }}:${{ env.CURRENT_RELEASE }} -t turingrc/rctab-${{ matrix.function }}:${{ env.MAJOR_VERSION_NUMBER }}.latest
           docker push --all-tags turingrc//rctab-${{ matrix.function }}
