@@ -21,7 +21,7 @@ The generic instructions in the repo [README](../README.md) should work.
 
 The generic instructions in the repo [README](../README.md) should work except that:
 
-1. To work, this function needs a managed identity with either the `owner` role or a new role with `Microsoft.Authorization/*` and `Microsoft.Subscription/*` permissions over a Management Group called `managed/`.
+1. This function requires a role with a certain level of permission across subscriptions. For this to work, the function needs a managed identity with a role (either the `owner` role or a new role) that possess `Microsoft.Authorization/*` and `Microsoft.Subscription/*` permissions over a defined Management Group with a given name.
 1. The private key environment variable is called `PRIVATE_KEY`.
 
 #### Run
