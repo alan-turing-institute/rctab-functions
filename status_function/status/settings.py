@@ -7,7 +7,16 @@ from pydantic import BaseSettings, HttpUrl, validator
 
 
 class Settings(BaseSettings):
-    """A class to load and validate settings from the environment or a .env file."""
+    """A class to load and validate settings from the environment or a .env file.
+
+    Attributes:
+        API_URL: The URL of the API.
+        PRIVATE_KEY: The private key used to sign the access token.
+        LOG_LEVEL: The log level. Default is "WARNING".
+        CENTRAL_LOGGING_CONNECTION_STRING: The connection string for the
+            centralised logging workspace.
+
+    """
 
     API_URL: HttpUrl
     PRIVATE_KEY: str
@@ -16,11 +25,29 @@ class Settings(BaseSettings):
     CENTRAL_LOGGING_CONNECTION_STRING: Optional[str]
 
     class Config:
+        """Configuration for the Settings class env file.
+
+        Attributes:
+            env_file: The name of the .env file.
+            env_file_encoding: The encoding of the .env file.
+        """
+
         env_file = ".env"
         env_file_encoding = "utf-8"
 
     @validator("PRIVATE_KEY")
-    def correct_start_and_end(cls, v):  # pylint: disable=no-self-argument
+    def correct_start_and_end(
+        cls: Config, v: str
+    ) -> str:  # pylint: disable=no-self-argument
+        """Check that the private key is a private key.
+
+        Args:
+            cls: The class.
+            v: The private key.
+
+        Returns:
+            The validated private key.
+        """
         if not v.startswith("-----BEGIN OPENSSH PRIVATE KEY-----"):
             raise ValueError(
                 'Expected key to start with "-----BEGIN OPENSSH PRIVATE KEY-----".'
@@ -37,4 +64,9 @@ class Settings(BaseSettings):
 
 @lru_cache()
 def get_settings() -> Settings:
+    """Get the settings.
+
+    Returns:
+        The settings.
+    """
     return Settings()

@@ -1,7 +1,15 @@
-"""An Azure Function App to collect status information."""
+"""An Azure Function App to collect status information.
+
+Attributes:
+    CREDENTIALS: A set of credentials to use for authentication.
+    GRAPH_CREDENTIALS: A set of credentials to use for authentication with the
+        Azure AD graph. See https://docs.microsoft.com/en-us/graph/auth-v2-service#4-get-an-access-token # noqa pylint: disable=C0301
+
+"""
 import logging
 from datetime import datetime
 from functools import lru_cache
+from typing import Any, Optional
 
 import azure.functions as func
 import requests
@@ -11,6 +19,7 @@ from azure.identity import DefaultAzureCredential
 from azure.mgmt.authorization import AuthorizationManagementClient as AuthClient
 from azure.mgmt.subscription import SubscriptionClient
 from msrestazure.azure_exceptions import CloudError
+from pydantic import HttpUrl
 
 from status import models, settings
 from status.auth import BearerAuth
@@ -36,8 +45,19 @@ GRAPH_CREDENTIALS = CredentialWrapper(
 )
 
 
-def send_status(hostname_or_ip, status_data):
-    """Post each item of status_data to a route."""
+def send_status(hostname_or_ip: HttpUrl, status_data: list) -> None:
+    """Post each item of status_data to a route.
+
+    Args:
+        hostname_or_ip: The hostname or IP address of the API.
+        status_data: A list of status objects.
+
+    Raises:
+        RuntimeError: If the POST fails twice.
+
+    Returns:
+        None.
+    """
     logger.warning("Sending status data.")
 
     for _ in range(2):
@@ -66,27 +86,67 @@ def send_status(hostname_or_ip, status_data):
     raise RuntimeError("Could not POST status data.")
 
 
-def get_role_assignments_list(auth_client):
-    # https://docs.microsoft.com/en-us/python/api/azure-mgmt-authorization/azure.mgmt.authorization.v2015_07_01.models.roleassignmentlistresult?view=azure-python
+def get_role_assignments_list(auth_client: AuthClient) -> list:
+    """Return a list of role assignments from an auth client.
+
+    Args:
+        auth_client: An auth client.
+
+    Returns:
+        A list of role assignments.
+    """
     return list(auth_client.role_assignments.list())
 
 
-def get_role_def_dict(auth_client, subscription_id):
+def get_role_def_dict(auth_client: AuthClient, subscription_id: str) -> dict:
+    """Return a dictionary of role definitions from an auth client.
+
+    See https://docs.microsoft.com/en-us/python/api/azure-mgmt-authorization/azure.mgmt.authorization.v2015_07_01.models.roledefinition?view=azure-python # noqa pylint: disable=C0301
+
+    Args:
+        auth_client: An auth client.
+        subscription_id: The subscription id.
+
+    Returns:
+        A dictionary of role definitions. id is the key and role name is the value.
+    """
     role_defs = list(
         auth_client.role_definitions.list(scope="/subscriptions/" + subscription_id)
     )
     return {x.id: x.role_name for x in role_defs}
 
 
-def get_auth_client(subscription):
+def get_auth_client(
+    subscription: Any,
+) -> AuthClient:
+    """Get an auth client for a given subscription.
+
+    See https://docs.microsoft.com/en-us/python/api/azure-mgmt-authorization/azure.mgmt.authorization.authorizationmanagementclient?view=azure-python # noqa pylint: disable=C0301
+
+    Args:
+        subscription: A subscription to retrieve te authorisation client for.
+
+    Returns:
+        An authorisation client for the given subscription.
+    """
     return AuthClient(
         credential=CREDENTIALS, subscription_id=subscription.subscription_id
     )
 
 
 @lru_cache(maxsize=500)
-def get_principal(principal_id, graph_client):
-    """Get service principal"""
+def get_principal(
+    principal_id: str, graph_client: GraphRbacManagementClient
+) -> Optional[list]:
+    """Get the service principal.
+
+    Args:
+        principal_id: The principal id.
+        graph_client: The graph client to check the principal.
+
+    Returns:
+        The principal if it exists, otherwise None.
+    """
     params = GetObjectsParameters(
         include_directory_object_references=True,
         object_ids=[principal_id],
@@ -97,8 +157,15 @@ def get_principal(principal_id, graph_client):
     return None
 
 
-def get_principal_details(principal):
-    """Get details of a service principal, e.g. type, display name and email"""
+def get_principal_details(principal: Any):
+    """Get details of a service principal.
+
+    Args:
+        principal: The principal to get details for.
+
+    Returns:
+        A dictionary of principal details including type, display name and email.
+    """
     principal_type = type(principal)
     mail = None
     display_name = "Unknown"
@@ -113,8 +180,18 @@ def get_principal_details(principal):
     }
 
 
-def get_ad_group_principals(group, graph_client):
-    """Get the members of a given AD group and extract their principal information."""
+def get_ad_group_principals(
+    group: Any, graph_client: GraphRbacManagementClient
+) -> list:
+    """Get the members of a given AD group and extract their principal information.
+
+    Args:
+        group: The AD group to get members for.
+        graph_client: The graph client to check the principal.
+
+    Returns:
+        A list of principal details.
+    """
     group_principal = list(graph_client.groups.get_group_members(group.object_id))
     group_principal_details = []
     for principal in group_principal:
@@ -124,8 +201,19 @@ def get_ad_group_principals(group, graph_client):
     return group_principal_details
 
 
-def get_role_assignment_models(assignment, role_name, graph_client):
-    """Populate RoleAssignment objects with principal role details."""
+def get_role_assignment_models(
+    assignment: Any, role_name: str, graph_client: GraphRbacManagementClient
+) -> list[models.RoleAssignment]:
+    """Populate RoleAssignment objects with principal role details.
+
+    Args:
+        assignment: The role assignment to get details for.
+        role_name: The name of the role.
+        graph_client: The graph client to check the principal.
+
+    Returns:
+        A list of RoleAssignment objects.
+    """
     principal_details = []
     principal = get_principal(assignment.properties.principal_id, graph_client)
     if principal:
@@ -150,8 +238,19 @@ def get_role_assignment_models(assignment, role_name, graph_client):
     ]
 
 
-def get_subscription_role_assignment_models(subscription, graph_client):
-    """Get the role assignment models for each a subscription."""
+def get_subscription_role_assignment_models(
+    subscription: Any,
+    graph_client: GraphRbacManagementClient,
+) -> list:
+    """Get the role assignment models for each a subscription.
+
+    Args:
+        subscription: The subscription to get role assignments for.
+        graph_client: The graph client to check the principal.
+
+    Returns:
+        A list of RoleAssignment objects.
+    """
     auth_client = get_auth_client(subscription)
     role_def_dict = get_role_def_dict(auth_client, subscription.subscription_id)
     assignments_list = get_role_assignments_list(auth_client)
@@ -172,9 +271,15 @@ def get_subscription_role_assignment_models(subscription, graph_client):
     return role_assignments_models
 
 
-def get_all_status(tenant_id):
-    """Get status and role assignments for all subscriptions."""
+def get_all_status(tenant_id: str) -> list[models.SubscriptionStatus]:
+    """Get status and role assignments for all subscriptions.
 
+    Args:
+        tenant_id: The tenant id to get status for.
+
+    Returns:
+        A list of SubscriptionStatus objects.
+    """
     logger.warning("Getting all status data.")
     started_at = datetime.now()
 
@@ -207,6 +312,14 @@ def get_all_status(tenant_id):
 
 
 def main(mytimer: func.TimerRequest) -> None:
+    """Run status app.
+
+    Args:
+        mytimer: A timer.
+
+    Returns:
+        None.
+    """
     # If incorrect settings have been given,
     # better to find out sooner rather than later.
     config = settings.get_settings()

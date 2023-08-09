@@ -1,4 +1,10 @@
-"""Authentication between status package and API web app."""
+"""Authentication between status package and API web app.
+
+Attributes:
+    ALGORITHM: The algorithm used to sign the access token. Value is "RS256".
+    ACCESS_TOKEN_EXPIRE_MINUTES: The number of minutes before an access token.
+        value is 5.
+"""
 from datetime import datetime, timedelta
 
 import jwt
@@ -20,6 +26,7 @@ class BearerAuth(requests.auth.AuthBase):
     """
 
     def __init__(self) -> None:
+        """Initialize the BearerAuth object."""
         settings = get_settings()
 
         # Generate keys with ssh-keygen -t rsa
@@ -29,7 +36,13 @@ class BearerAuth(requests.auth.AuthBase):
             private_key_txt.encode(), password=b""
         )
 
-    def create_access_token(self):
+    def create_access_token(self) -> str:
+        """Create an access token for the user to access the API.
+
+        Returns:
+            str: The access token.
+
+        """
         token_claims = {"sub": "status-app"}
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
 
