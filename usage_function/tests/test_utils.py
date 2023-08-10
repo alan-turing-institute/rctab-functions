@@ -7,7 +7,7 @@ from uuid import UUID
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 
-import utils
+from src import utils
 
 
 class TestUsage(TestCase):
@@ -17,7 +17,7 @@ class TestUsage(TestCase):
         # Mock usage data, for when we patch usage_details.list
         expected = [1, 2]
 
-        with patch("utils.usage.ConsumptionManagementClient") as mock_client:
+        with patch("src.utils.usage.ConsumptionManagementClient") as mock_client:
             mock_list_func = mock_client.return_value.usage_details.list
             mock_list_func.return_value = expected
 
@@ -104,14 +104,14 @@ class TestUsage(TestCase):
             usage_dict,
         )
 
-        with patch("utils.usage.BearerAuth") as mock_auth:
+        with patch("src.utils.usage.BearerAuth") as mock_auth:
             with patch("requests.post") as mock_post:
                 mock_response = MagicMock()
                 mock_response.status_code = 300
                 mock_response.text = "some-mock-text"
                 mock_post.return_value = mock_response
 
-                with patch("utils.usage.logging.warning") as mock_log:
+                with patch("src.utils.usage.logging.warning") as mock_log:
 
                     def send():
                         utils.usage.retrieve_and_send_usage(
@@ -146,7 +146,7 @@ class TestUsage(TestCase):
                 mock_response.status_code = 200
                 mock_post.return_value = mock_response
 
-                with patch("usage.logging.warning"):
+                with patch("src.usage.logging.warning"):
                     utils.usage.retrieve_and_send_usage(
                         "https://123.234.345.456", [example_usage_detail]
                     )
@@ -165,7 +165,7 @@ class TestUsage(TestCase):
                     )
 
     def test_get_subs(self):
-        with patch("utils.usage.SubscriptionClient") as mock_sub_client:
+        with patch("src.utils.usage.SubscriptionClient") as mock_sub_client:
             mock_sub = MagicMock()
             mock_sub.as_dict.return_value = {1: 2, 3: 4}
 

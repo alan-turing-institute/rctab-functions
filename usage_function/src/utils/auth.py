@@ -5,7 +5,7 @@ import jwt
 import requests
 from cryptography.hazmat.primitives import serialization
 
-from utils.settings import get_settings
+from src.utils.settings import get_settings
 
 ALGORITHM = "RS256"
 

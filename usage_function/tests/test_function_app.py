@@ -10,27 +10,24 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from pydantic import HttpUrl
 from pydantic.tools import parse_obj_as
 
-import costmanagement
-import monthly_usage
-import usage
-import utils
+from src import costmanagement, monthly_usage, usage, utils
 
 
 class TestUsage(TestCase):
     """Tests for the usage/__init__.py file."""
 
     def test_main(self):
-        with patch("usage.get_all_usage") as mock_get_all_usage:
+        with patch("src.usage.get_all_usage") as mock_get_all_usage:
             mock_get_all_usage.return_value = ["usage1", "usage2"]
 
-            with patch("usage.datetime") as mock_datetime:
+            with patch("src.usage.datetime") as mock_datetime:
                 now = datetime.now()
                 mock_datetime.now.return_value = now
 
                 with patch(
-                    "usage.retrieve_and_send_usage"
+                    "src.usage.retrieve_and_send_usage"
                 ) as mock_retrieve_and_send_usage:
-                    with patch("utils.settings.get_settings") as mock_get_settings:
+                    with patch("src.utils.settings.get_settings") as mock_get_settings:
                         mock_get_settings.return_value = utils.settings.Settings(
                             API_URL="https://my.host",
                             PRIVATE_KEY="-----BEGIN OPENSSH "
@@ -43,7 +40,7 @@ class TestUsage(TestCase):
                             _env_file=None,
                         )
 
-                        with patch("usage.date_range") as mock_date_range:
+                        with patch("src.usage.date_range") as mock_date_range:
                             mock_date_range.return_value = [33, 44]
 
                             mock_timer = MagicMock()
@@ -105,12 +102,14 @@ class TestMonthlyUsage(TestCase):
             _env_file=None,
         )
 
-        with patch("monthly_usage.get_all_usage") as mock_get_all, patch(
-            "monthly_usage.retrieve_usage"
-        ) as mock_retrieve, patch("monthly_usage.date_range") as mock_date_range, patch(
-            "monthly_usage.send_usage"
+        with patch("src.monthly_usage.get_all_usage") as mock_get_all, patch(
+            "src.monthly_usage.retrieve_usage"
+        ) as mock_retrieve, patch(
+            "src.monthly_usage.date_range"
+        ) as mock_date_range, patch(
+            "src.monthly_usage.send_usage"
         ) as mock_send, patch(
-            "utils.settings.get_settings"
+            "src.utils.settings.get_settings"
         ) as mock_get_settings:
             mock_date_range.return_value = [0]
             mock_get_settings.return_value = settings
@@ -129,12 +128,12 @@ class TestCostManagement(TestCase):
         calls. Check that each gets called with expected arguments.
         """
         now = datetime(year=2022, month=7, day=11)
-        with patch("costmanagement.get_all_usage") as mock_get_all_usage, patch(
-            "costmanagement.datetime", autospec=True
+        with patch("src.costmanagement.get_all_usage") as mock_get_all_usage, patch(
+            "src.costmanagement.datetime", autospec=True
         ) as mock_datetime, patch(
-            "costmanagement.send_usage"
+            "src.costmanagement.send_usage"
         ) as mock_send_usage, patch(
-            "utils.settings.get_settings"
+            "src.utils.settings.get_settings"
         ) as mock_get_settings:
             mock_get_all_usage.return_value = ["sub1", "sub2"]
             mock_datetime.now.return_value = now
@@ -199,7 +198,9 @@ class TestCostManagement(TestCase):
             ]
         )
 
-        with patch("costmanagement.CostManagementClient") as mock_consumption_client:
+        with patch(
+            "src.costmanagement.CostManagementClient"
+        ) as mock_consumption_client:
             mock_list_func = mock_consumption_client.return_value.query.usage
             mock_data = mock_list_func.return_value
             mock_data.rows = query_return
@@ -281,14 +282,14 @@ class TestCostManagement(TestCase):
         )
         expected_json = local_usage.json()
 
-        with patch("costmanagement.BearerAuth") as mock_auth:
+        with patch("src.costmanagement.BearerAuth") as mock_auth:
             with patch("requests.post") as mock_post:
                 mock_response = MagicMock()
                 mock_response.status_code = 300
                 mock_response.text = "some-mock-text"
                 mock_post.return_value = mock_response
 
-                with patch("costmanagement.logger.warning") as mock_log:
+                with patch("src.costmanagement.logger.warning") as mock_log:
 
                     def send():
                         costmanagement.send_usage(
@@ -322,7 +323,7 @@ class TestCostManagement(TestCase):
                 mock_response.status_code = 200
                 mock_post.return_value = mock_response
 
-                with patch("costmanagement.logger.warning"):
+                with patch("src.costmanagement.logger.warning"):
                     costmanagement.send_usage(
                         "https://123.234.345.456",
                         local_usage,

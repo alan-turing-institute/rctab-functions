@@ -8,10 +8,9 @@ from azure.identity import DefaultAzureCredential
 from azure.mgmt.costmanagement import CostManagementClient
 from azure.mgmt.costmanagement.models import QueryDefinition
 
-import utils.settings
-from utils import models
-from utils.auth import BearerAuth
-from utils.logutils import set_log_handler
+from src.utils import models, settings
+from src.utils.auth import BearerAuth
+from src.utils.logutils import set_log_handler
 
 logging.basicConfig(
     level=logging.WARNING,
@@ -186,7 +185,7 @@ def main(mytimer: func.TimerRequest) -> None:
 
     # If incorrect settings have been given, better to find out sooner rather than
     # later.
-    config = utils.settings.get_settings()
+    config = settings.get_settings()
 
     end_datetime = datetime.now()
     # TODO What should this start date be?

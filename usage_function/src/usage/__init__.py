@@ -7,9 +7,9 @@ import azure.functions as func
 from azure.core.exceptions import HttpResponseError
 from azure.identity import DefaultAzureCredential
 
-import utils.settings
-from utils.logutils import set_log_handler
-from utils.usage import date_range, get_all_usage, retrieve_and_send_usage
+from src.utils import settings
+from src.utils.logutils import set_log_handler
+from src.utils.usage import date_range, get_all_usage, retrieve_and_send_usage
 
 # We should only need one set of credentials
 CREDENTIALS = DefaultAzureCredential(exclude_shared_token_cache_credential=True)
@@ -18,7 +18,7 @@ CREDENTIALS = DefaultAzureCredential(exclude_shared_token_cache_credential=True)
 def main(mytimer: func.TimerRequest) -> None:
     # If incorrect settings have been given,
     # better to find out sooner rather than later.
-    config = utils.settings.get_settings()
+    config = settings.get_settings()
 
     logging.basicConfig(
         level=config.LOG_LEVEL,

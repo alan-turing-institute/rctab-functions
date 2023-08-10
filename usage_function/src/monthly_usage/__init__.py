@@ -6,9 +6,9 @@ from datetime import datetime, timedelta
 import azure.functions as func
 from azure.core.exceptions import HttpResponseError
 
-import utils.settings
-from utils.logutils import set_log_handler
-from utils.usage import date_range, get_all_usage, retrieve_usage, send_usage
+from src.utils import settings
+from src.utils.logutils import set_log_handler
+from src.utils.usage import date_range, get_all_usage, retrieve_usage, send_usage
 
 MAX_ATTEMPTS = 5
 
@@ -16,7 +16,7 @@ MAX_ATTEMPTS = 5
 def main(mytimer: func.TimerRequest) -> None:
     # If incorrect settings have been given,
     # better to find out sooner rather than later.
-    config = utils.settings.get_settings()
+    config = settings.get_settings()
 
     logging.basicConfig(
         level=config.LOG_LEVEL,

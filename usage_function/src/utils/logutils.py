@@ -3,7 +3,7 @@ import logging
 
 from opencensus.ext.azure.log_exporter import AzureLogHandler
 
-import utils.settings
+from src.utils import settings
 
 
 class CustomDimensionsFilter(logging.Filter):
@@ -36,11 +36,11 @@ def set_log_handler(name: str = "usage_function") -> None:
         Name of the logger instance to which we add the log handler."""
 
     logger = logging.getLogger(name)
-    settings = utils.settings.get_settings()
-    if settings.CENTRAL_LOGGING_CONNECTION_STRING:
+    local_settings = settings.get_settings()
+    if local_settings.CENTRAL_LOGGING_CONNECTION_STRING:
         custom_dimensions = {"logger_name": f"logger_{name}"}
         handler = AzureLogHandler(
-            connection_string=settings.CENTRAL_LOGGING_CONNECTION_STRING
+            connection_string=local_settings.CENTRAL_LOGGING_CONNECTION_STRING
         )
         handler.addFilter(CustomDimensionsFilter(custom_dimensions))
         logger.addHandler(handler)

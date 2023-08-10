@@ -11,8 +11,8 @@ from azure.mgmt.consumption import ConsumptionManagementClient
 from azure.mgmt.managementgroups import ManagementGroupsAPI
 from azure.mgmt.subscription import SubscriptionClient
 
-from utils import models
-from utils.auth import BearerAuth
+from src.utils import models
+from src.utils.auth import BearerAuth
 
 # We should only need one set of credentials
 CREDENTIALS = DefaultAzureCredential(exclude_shared_token_cache_credential=True)
