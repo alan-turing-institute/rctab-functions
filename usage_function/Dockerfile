@@ -11,8 +11,8 @@ COPY pyproject.toml poetry.lock ./
 RUN ~/.local/share/pypoetry/venv/bin/poetry install --only main
 
 RUN mkdir -p /home/site/wwwroot/usage
-COPY usage/*.py /home/site/wwwroot/usage/
-COPY usage/function.json /home/site/wwwroot/usage/
+COPY src/usage/*.py /home/site/wwwroot/usage/
+COPY src/usage/function.json /home/site/wwwroot/usage/
 
 RUN mkdir -p /home/site/wwwroot/utils
-COPY utils/*.py /home/site/wwwroot/utils/
+COPY src/utils/*.py /home/site/wwwroot/utils/
