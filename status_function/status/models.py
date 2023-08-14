@@ -13,6 +13,7 @@ class HashBaseModel(BaseModel):
     """
 
     def __hash__(self) -> int:
+        """Hash the model."""
         return hash((type(self),) + tuple(self.__dict__.values()))
 
 

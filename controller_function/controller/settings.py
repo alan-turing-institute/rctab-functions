@@ -14,11 +14,14 @@ class Settings(BaseSettings):
     CENTRAL_LOGGING_CONNECTION_STRING: Optional[str]
 
     class Config:
+        """Meta-settings for the Settings class."""
+
         env_file = ".env"
         env_file_encoding = "utf-8"
 
     @validator("PRIVATE_KEY")
     def correct_start_and_end(cls, v):  # pylint: disable=no-self-argument
+        """Validate a private key."""
         if not v.startswith("-----BEGIN OPENSSH PRIVATE KEY-----"):
             raise ValueError(
                 'Expected key to start with "-----BEGIN OPENSSH PRIVATE KEY-----".'
@@ -35,4 +38,5 @@ class Settings(BaseSettings):
 
 @lru_cache()
 def get_settings() -> Settings:
+    """Get the global app settings object."""
     return Settings()

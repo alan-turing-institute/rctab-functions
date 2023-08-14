@@ -50,21 +50,20 @@ def _truncate_date(date_time):
 
 
 def get_all_usage(start_datetime: datetime, end_datetime: datetime, mgmt_group: str):
-    """Get Azure cost management data for a management group between start_datetime and
-    end_datetime.
+    """Collect Azure cost management data.
 
     The dates are truncated to the day, and the ranges are inclusive, so that e.g.
     start_datetime = 2022-01-01T15, end_datetime = 2022-01-01T0 would get all usage for
     2022-01-01.
 
     Args:
-        start_datetime datetime.datetime: Start time
-        end_datetime datetime.datetime: End time
-        mgmt_group str: Name of the management group
+        start_datetime: Start time.
+        end_datetime: End time.
+        mgmt_group: Name of the management group.
 
     Return:
         A dictionary with the usage data, with (subscription_id, name, currency) as keys
-        and amounts as values
+        and amounts as values.
     """
     logger.warning(
         "Requesting data between %s and %s",

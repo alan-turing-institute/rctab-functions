@@ -16,6 +16,7 @@ CREDENTIALS = DefaultAzureCredential(exclude_shared_token_cache_credential=True)
 
 
 def main(mytimer: func.TimerRequest) -> None:
+    """Collect usage information and send it to the API."""
     # If incorrect settings have been given,
     # better to find out sooner rather than later.
     config = utils.settings.get_settings()

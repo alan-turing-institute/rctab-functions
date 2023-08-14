@@ -1,19 +1,21 @@
-"""Manage subscription life cycle"""
+"""Manage subscription life cycle."""
 import logging
 from uuid import UUID
 
 from azure.core import exceptions as azure_exceptions
 from azure.mgmt.subscription import SubscriptionClient
 
-from controller.credentials import CREDENTIALS
+
+CREDENTIALS = DefaultAzureCredential()
 
 SUBSCRIPTION_CLIENT = SubscriptionClient(credential=CREDENTIALS)
 
 
 def enable_subscription(subscription_id: UUID) -> None:
-    """Enable a subscription
+    """Enable a subscription.
+
     Args:
-        subscription_id (UUID): Subscription id
+        subscription_id: Subscription id.
     """
     try:
         SUBSCRIPTION_CLIENT.subscription.enable(str(subscription_id))
@@ -31,6 +33,11 @@ def enable_subscription(subscription_id: UUID) -> None:
 
 
 def disable_subscription(subscription_id: UUID) -> None:
+    """Disable a subscription.
+
+    Args:
+        subscription_id: Subscription id.
+    """
     try:
         SUBSCRIPTION_CLIENT.subscription.cancel(str(subscription_id))
     except azure_exceptions.HttpResponseError as e:

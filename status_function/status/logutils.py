@@ -51,7 +51,6 @@ def set_log_handler(name: str = "status") -> None:
     Returns:
         None
     """
-
     logger = logging.getLogger(name)
     log_settings = settings.get_settings()
     if log_settings.CENTRAL_LOGGING_CONNECTION_STRING:

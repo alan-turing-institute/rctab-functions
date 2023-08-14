@@ -20,6 +20,7 @@ class BearerAuth(requests.auth.AuthBase):
     """
 
     def __init__(self) -> None:
+        """Initialize the BearerAuth object."""
         auth_settings = settings.get_settings()
 
         # Generate keys with ssh-keygen -t rsa
@@ -30,6 +31,7 @@ class BearerAuth(requests.auth.AuthBase):
         )
 
     def create_access_token(self):
+        """Create an access token."""
         token_claims = {"sub": "controller-app"}
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
 

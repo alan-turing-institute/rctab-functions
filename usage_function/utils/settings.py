@@ -19,11 +19,18 @@ class Settings(BaseSettings):
     CENTRAL_LOGGING_CONNECTION_STRING: Optional[str]
 
     class Config:
+        """Settings for the settings class itself."""
+
         env_file = ".env"
         env_file_encoding = "utf-8"
 
     @validator("PRIVATE_KEY")
     def correct_start_and_end(cls, v):  # pylint: disable=no-self-argument
+        """Validate the private key.
+
+        Args:
+            v: The private key to validate.
+        """
         if not v.startswith("-----BEGIN OPENSSH PRIVATE KEY-----"):
             raise ValueError(
                 'Expected key to start with "-----BEGIN OPENSSH PRIVATE KEY-----".'
@@ -42,7 +49,6 @@ class Settings(BaseSettings):
         cls, value, values
     ):  # pylint: disable=no-self-argument
         """Require either a mgmt group name or a billing account ID."""
-
         # Assume we don't know which order things are validated in
         if "BILLING_ACCOUNT_ID" in values.keys() or "MGMT_GROUP" in values.keys():
             previous_value = values.get("BILLING_ACCOUNT_ID", values.get("MGMT_GROUP"))
@@ -57,4 +63,5 @@ class Settings(BaseSettings):
 
 @lru_cache()
 def get_settings() -> Settings:
+    """Get the global settings for the app."""
     return Settings()

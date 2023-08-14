@@ -40,8 +40,7 @@ class BearerAuth(requests.auth.AuthBase):
         """Create an access token for the user to access the API.
 
         Returns:
-            str: The access token.
-
+            The access token.
         """
         token_claims = {"sub": "status-app"}
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -52,5 +51,6 @@ class BearerAuth(requests.auth.AuthBase):
         return jwt.encode(token_claims, self.private_key, algorithm="RS256")
 
     def __call__(self, r: requests.PreparedRequest) -> requests.PreparedRequest:
+        """"""
         r.headers["authorization"] = "Bearer " + self.create_access_token()
         return r

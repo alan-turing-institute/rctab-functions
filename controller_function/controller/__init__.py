@@ -76,6 +76,7 @@ def enable_subscriptions(subs_to_enable):
 
 
 def main(mytimer: func.TimerRequest) -> None:
+    """Disable or enable subscriptions as directed by the API."""
     # If incorrect settings have been given,
     # better to find out sooner rather than later.
     config = settings.get_settings()

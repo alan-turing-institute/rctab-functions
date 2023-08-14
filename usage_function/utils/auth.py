@@ -14,10 +14,13 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 5
 
 
 class BearerAuth(requests.auth.AuthBase):
-    """Part of a Bearer (a.k.a. "token") authentication scheme using pre-generated
-    keys."""
+    """A Bearer (a.k.a. "token") authentication scheme.
+
+    Uses pre-shared keys.
+    """
 
     def __init__(self) -> None:
+        """Initialise the BearerAuth class."""
         settings = get_settings()
 
         # Generate keys with ssh-keygen -t rsa
@@ -28,6 +31,7 @@ class BearerAuth(requests.auth.AuthBase):
         )
 
     def create_access_token(self):
+        """Create an access token."""
         token_claims = {"sub": "usage-app"}
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
 
@@ -37,5 +41,6 @@ class BearerAuth(requests.auth.AuthBase):
         return jwt.encode(token_claims, self.private_key, algorithm="RS256")
 
     def __call__(self, r: requests.PreparedRequest) -> requests.PreparedRequest:
+        """Add the bearer token to the request."""
         r.headers["authorization"] = "Bearer " + self.create_access_token()
         return r
