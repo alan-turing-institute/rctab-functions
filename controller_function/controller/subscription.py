@@ -3,8 +3,8 @@ import logging
 from uuid import UUID
 
 from azure.core import exceptions as azure_exceptions
+from azure.identity import DefaultAzureCredential
 from azure.mgmt.subscription import SubscriptionClient
-
 
 CREDENTIALS = DefaultAzureCredential()
 
