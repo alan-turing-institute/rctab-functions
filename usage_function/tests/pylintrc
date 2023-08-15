@@ -61,25 +61,16 @@ confidence=
 # no Warning level messages displayed, use "--disable=all --enable=classes
 # --disable=W".
 disable=raw-checker-failed,
-        bad-inline-option,
-        locally-disabled,
-        file-ignored,
+        duplicate-code,
         suppressed-message,
-        useless-suppression,
-        deprecated-pragma,
-        use-symbolic-message-instead,
+        consider-using-f-string,
         missing-module-docstring,
         missing-function-docstring,
-        no-value-for-parameter,
-        raise-missing-from,
         missing-class-docstring,
-        empty-docstring,
+        raise-missing-from,
         too-few-public-methods,
         no-self-argument,
-        duplicate-code,
         fixme,
-        consider-using-f-string,
-        use-dict-literal,
         too-many-lines,
         too-many-locals
 
