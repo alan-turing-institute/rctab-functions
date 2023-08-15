@@ -15,12 +15,17 @@ class CredentialWrapper(BasicTokenAuthentication):
         resource_id="https://management.azure.com/.default",
         **kwargs
     ):
-        """Wrap any azure-identity credential to work with SDK that needs
-        azure.common.credentials/msrestazure. Default resource is ARM
-        (syntax of endpoint v2).
-        :param credential: Any azure-identity credential
-                           (DefaultAzureCredential by default)
-        :param str resource_id: The scope to use to get the token (default ARM)
+        """Wrap an azure-identity credential for SDK compatibility.
+
+        Adapts azure-identity credentials for use with SDKs that require
+        azure.common.credentials or msrestazure. The default resource is
+        Azure Resource Manager (ARM) using the v2 syntax of the endpoint.
+
+        Args:
+            credential: An azure-identity credential instance.
+                Default is DefaultAzureCredential.
+            resource_id (str): The scope to use when obtaining the token.
+                Default is 'ARM'.
         """
         super().__init__(None)
         if credential is None:
@@ -34,10 +39,13 @@ class CredentialWrapper(BasicTokenAuthentication):
 
     def set_token(self):
         """Ask the azure-core BearerTokenCredentialPolicy policy to get a token.
+
         Using the policy gives us for free the caching system of azure-core.
         We could make this code simpler by using private method, but by definition
         I can't assure they will be there forever, so mocking a fake call to the policy
-        to extract the token, using 100% public API."""
+        to extract the token, using 100% public API.
+        """
+
         request = self._make_request()
         self._policy.on_request(request)
         # Read Authorization, and get the second part after Bearer
@@ -45,5 +53,14 @@ class CredentialWrapper(BasicTokenAuthentication):
         self.token = {"access_token": token}
 
     def signed_session(self, session=None):
+        """Get a signed session for authenticated requests.
+
+        Args:
+            session: Session object to use. Default is None.
+
+        Returns:
+            A signed session.
+        """
+
         self.set_token()
         return super().signed_session(session)
