@@ -16,6 +16,7 @@ class CredentialWrapper(BasicTokenAuthentication):
         **kwargs: dict
     ):
         """Wrap any azure-identity credential to work with SDK.
+
         Applies to credentials that need azure.common.credentials/msrestazure.
         Default resource is ARM
         (syntax of endpoint v2).
@@ -28,7 +29,6 @@ class CredentialWrapper(BasicTokenAuthentication):
         Keyword Args:
             Any other parameter accepted by BasicTokenAuthentication
         """
-
         super().__init__(None)
         if credential is None:
             credential = DefaultAzureCredential(

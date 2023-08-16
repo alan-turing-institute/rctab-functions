@@ -1,4 +1,4 @@
-"""Copied from https://stackoverflow.com/a/64129363/3324095"""
+"""Copied from https://stackoverflow.com/a/64129363/3324095."""
 from azure.core.pipeline import PipelineContext, PipelineRequest
 from azure.core.pipeline.policies import BearerTokenCredentialPolicy
 from azure.core.pipeline.transport import HttpRequest
@@ -45,7 +45,6 @@ class CredentialWrapper(BasicTokenAuthentication):
         I can't assure they will be there forever, so mocking a fake call to the policy
         to extract the token, using 100% public API.
         """
-
         request = self._make_request()
         self._policy.on_request(request)
         # Read Authorization, and get the second part after Bearer
@@ -61,6 +60,5 @@ class CredentialWrapper(BasicTokenAuthentication):
         Returns:
             A signed session.
         """
-
         self.set_token()
         return super().signed_session(session)
