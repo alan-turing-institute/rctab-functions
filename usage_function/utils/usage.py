@@ -19,11 +19,11 @@ CREDENTIALS = DefaultAzureCredential(exclude_shared_token_cache_credential=True)
 
 
 def date_range(start_date, end_date):
-    """Yields a datetime day for each day between start_date and end_date (inclusive).
+    """Yield a datetime day for each day between start_date and end_date (inclusive).
 
     Args:
-        start_date date: First date included in range
-        end_date date: Last date included in range
+        start_date: First date included in range.
+        end_date: Last date included in range.
     """
     for n in range(int((end_date - start_date).days + 1)):
         yield datetime.combine(start_date.date() + timedelta(n), datetime.min.time())
@@ -38,12 +38,11 @@ def get_all_usage(
     """Get Azure usage data for a subscription between start_time and end_time.
 
     Args:
-        start_time datetime.datetime: Start time
-        end_time datetime.datetime: End time
-        billing_account_id str: Billing Account ID
-        mgmt_group str: The name of a management group
+        start_time: Start time.
+        end_time: End time.
+        billing_account_id: Billing Account ID.
+        mgmt_group: The name of a management group.
     """
-
     # It doesn't matter which subscription ID we use for this bit.
     consumption_client = ConsumptionManagementClient(
         credential=CREDENTIALS, subscription_id=str(UUID(int=0))
@@ -85,12 +84,11 @@ def retrieve_usage(usage_data):
     """Retrieve usage data from Azure.
 
     Args:
-        usage_data models.UsageData: Usage data object
+        usage_data models.UsageData: Usage data object.
 
     Returns:
-        List[models.Usage]: List of usage data
+        List[models.Usage]: List of usage data.
     """
-
     logging.warning("Retrieve items")
 
     all_items: Dict[str, models.Usage] = {}
@@ -144,8 +142,8 @@ def retrieve_and_send_usage(hostname_or_ip, usage_data):
     """Retrieve usage data from Azure and send it to the API.
 
     Args:
-        hostname_or_ip str: Hostname or IP of the API
-        usage_data models.UsageData: Usage data object
+        hostname_or_ip: Hostname or IP of the API.
+        usage_data: Usage data object.
     """
     usage_list = retrieve_usage(usage_data)
 
@@ -203,13 +201,13 @@ def get_subs():
 
 
 def get_mgmt_group_subscriptions(mgmt_group_id: str) -> List[UUID]:
-    """List all subscriptions in a management group
+    """List all subscriptions in a management group.
 
     Args:
-        mgmt_group_id (str): Management group id
+        mgmt_group_id: Management group id
 
     Returns:
-        List[UUID]: List of subscription ids
+        List: List of subscription ids
     """
     grp = [
         vars(i)

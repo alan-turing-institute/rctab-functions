@@ -27,3 +27,8 @@ repos:
     rev: v8.16.1
     hooks:
       - id: gitleaks
+  - repo: 'https://github.com/PyCQA/pydocstyle'
+    rev: 6.3.0
+    hooks:
+      - id: pydocstyle
+        args: ["--convention=google"]

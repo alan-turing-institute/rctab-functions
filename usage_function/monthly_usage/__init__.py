@@ -14,6 +14,7 @@ MAX_ATTEMPTS = 5
 
 
 def main(mytimer: func.TimerRequest) -> None:
+    """Collect usage information for the previous month."""
     # If incorrect settings have been given,
     # better to find out sooner rather than later.
     config = utils.settings.get_settings()

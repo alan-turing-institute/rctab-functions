@@ -11,16 +11,23 @@ class CredentialWrapper(BasicTokenAuthentication):
 
     def __init__(
         self,
-        credential=None,
-        resource_id="https://management.azure.com/.default",
-        **kwargs
+        credential: DefaultAzureCredential = None,
+        resource_id: str = "https://management.azure.com/.default",
+        **kwargs: dict
     ):
-        """Wrap any azure-identity credential to work with SDK that needs
-        azure.common.credentials/msrestazure. Default resource is ARM
+        """Wrap any azure-identity credential to work with SDK.
+
+        Applies to credentials that need azure.common.credentials/msrestazure.
+        Default resource is ARM
         (syntax of endpoint v2).
-        :param credential: Any azure-identity credential
-                           (DefaultAzureCredential by default)
-        :param str resource_id: The scope to use to get the token (default ARM)
+
+        Args:
+            credential: Any azure-identity credential (DefaultAzureCredential
+                by default)
+            resource_id: The scope to use to get the token (default ARM)
+
+        Keyword Args:
+            Any other parameter accepted by BasicTokenAuthentication
         """
         super().__init__(None)
         if credential is None:
@@ -36,16 +43,29 @@ class CredentialWrapper(BasicTokenAuthentication):
 
     def set_token(self):
         """Ask the azure-core BearerTokenCredentialPolicy policy to get a token.
+
         Using the policy gives us for free the caching system of azure-core.
-        We could make this code simpler by using private method, but by definition
-        I can't assure they will be there forever, so mocking a fake call to the policy
-        to extract the token, using 100% public API."""
+        A private method could be used to make this code simpler, but by definition
+        we can't assure they will be there forever, so we instead mock a fake call
+        to the policy to extract the token, using 100% public API.
+
+        Attributes:
+            token: The token to use for authentication.
+        """
         request = self._make_request()
         self._policy.on_request(request)
         # Read Authorization, and get the second part after Bearer
         token = request.http_request.headers["Authorization"].split(" ", 1)[1]
         self.token = {"access_token": token}
 
-    def signed_session(self, session=None):
+    def signed_session(self, session=None) -> DefaultAzureCredential:
+        """Sign the session.
+
+        Args:
+            session: The session to sign. Default is None.
+
+        Returns:
+            The signed session.
+        """
         self.set_token()
         return super().signed_session(session)
