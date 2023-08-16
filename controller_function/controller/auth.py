@@ -41,5 +41,6 @@ class BearerAuth(requests.auth.AuthBase):
         return jwt.encode(token_claims, self.private_key, algorithm="RS256")
 
     def __call__(self, r: requests.PreparedRequest) -> requests.PreparedRequest:
+        """Attach Authorization Header to a request."""
         r.headers["authorization"] = "Bearer " + self.create_access_token()
         return r

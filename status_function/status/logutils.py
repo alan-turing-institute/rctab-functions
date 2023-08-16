@@ -22,7 +22,7 @@ class CustomDimensionsFilter(logging.Filter):
         self.custom_dimensions = custom_dimensions or {}
 
     def filter(self, record: logging.LogRecord) -> bool:
-        """Adds the default custom_dimensions into the current log record.
+        """Add the default custom_dimensions into the current log record.
 
         Args:
             record: The log record to which we add the custom dimensions.
@@ -38,7 +38,7 @@ class CustomDimensionsFilter(logging.Filter):
 
 
 def set_log_handler(name: str = "status") -> None:
-    """Adds an Azure log handler to the logger with provided name.
+    """Add an Azure log handler to the logger with provided name.
 
     The log data is sent to the Azure Application Insights instance associated
     with the connection string in settings. Additional properties are added to

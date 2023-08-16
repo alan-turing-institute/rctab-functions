@@ -19,7 +19,7 @@ CREDENTIALS = DefaultAzureCredential(exclude_shared_token_cache_credential=True)
 
 
 def date_range(start_date, end_date):
-    """Yields a datetime day for each day between start_date and end_date (inclusive).
+    """Yield a datetime day for each day between start_date and end_date (inclusive).
 
     Args:
         start_date: First date included in range.
