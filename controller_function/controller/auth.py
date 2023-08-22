@@ -38,7 +38,7 @@ class BearerAuth(requests.auth.AuthBase):
         expire = datetime.utcnow() + access_token_expires
         token_claims.update({"exp": expire})
 
-        return jwt.encode(token_claims, self.private_key, algorithm="RS256")
+        return jwt.encode(token_claims, self.private_key, algorithm=ALGORITHM)
 
     def __call__(self, r: requests.PreparedRequest) -> requests.PreparedRequest:
         """Attach Authorization Header to a request."""

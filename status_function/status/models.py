@@ -6,17 +6,6 @@ from uuid import UUID
 from pydantic import BaseModel
 
 
-class HashBaseModel(BaseModel):
-    """BaseModel with hash.
-
-    This allows unique data generation for property based tests.
-    """
-
-    def __hash__(self) -> int:
-        """Hash the model."""
-        return hash((type(self),) + tuple(self.__dict__.values()))
-
-
 class RoleAssignment(BaseModel):
     """Role assignment model.
 

@@ -1,6 +1,5 @@
 """Pydantic models for the Azure status functions."""
 from enum import Enum
-from typing import List
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -25,20 +24,6 @@ class SubscriptionState(str, Enum):
     ENABLED = "Enabled"
     PASTDUE = "PastDue"
     WARNED = "Warned"
-
-
-class SubscriptionStatus(BaseModel):
-    """A class for the current name and state of a subscription."""
-
-    subscription_id: UUID
-    display_name: str
-    state: SubscriptionState
-
-
-class AllSubscriptionStatus(BaseModel):
-    """A wrapper for a list of subscription status objects."""
-
-    subscription_status_list: List[SubscriptionStatus]
 
 
 class DesiredState(HashBaseModel):

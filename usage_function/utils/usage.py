@@ -2,14 +2,12 @@
 import logging
 from datetime import datetime, timedelta
 from functools import lru_cache
-from typing import Dict, List
+from typing import Dict
 from uuid import UUID
 
 import requests
 from azure.identity import DefaultAzureCredential
 from azure.mgmt.consumption import ConsumptionManagementClient
-from azure.mgmt.managementgroups import ManagementGroupsAPI
-from azure.mgmt.subscription import SubscriptionClient
 
 from utils import models
 from utils.auth import BearerAuth
@@ -191,31 +189,3 @@ def send_usage(hostname_or_ip, all_item_list, monthly_usage_upload=False):
         )
 
     raise RuntimeError("Could not POST usage data.")
-
-
-def get_subs():
-    """Get all subscriptions visible to us and return them as dicts."""
-    sub_client = SubscriptionClient(CREDENTIALS)
-    subs = [sub.as_dict() for sub in sub_client.subscriptions.list()]
-    return subs
-
-
-def get_mgmt_group_subscriptions(mgmt_group_id: str) -> List[UUID]:
-    """List all subscriptions in a management group.
-
-    Args:
-        mgmt_group_id: Management group id
-
-    Returns:
-        List: List of subscription ids
-    """
-    grp = [
-        vars(i)
-        for i in ManagementGroupsAPI(
-            credential=CREDENTIALS
-        ).management_group_subscriptions.get_subscriptions_under_management_group(
-            group_id=mgmt_group_id
-        )
-    ]
-
-    return [UUID(g["name"]) for g in grp]
