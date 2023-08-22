@@ -51,7 +51,7 @@ jobs:
         run: |
           pwd
           cd usage_function
-          poetry lock --check
+          poetry check --lock
 
       - name: Install dependencies
         shell: bash
