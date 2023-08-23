@@ -164,18 +164,6 @@ class TestUsage(TestCase):
                         timeout=60,
                     )
 
-    def test_get_subs(self):
-        with patch("utils.usage.SubscriptionClient") as mock_sub_client:
-            mock_sub = MagicMock()
-            mock_sub.as_dict.return_value = {1: 2, 3: 4}
-
-            mock_list_func = mock_sub_client.return_value.subscriptions.list
-            mock_list_func.return_value = [mock_sub]
-
-            actual = utils.usage.get_subs()
-            expected = [{1: 2, 3: 4}]
-            self.assertListEqual(expected, actual)
-
     def test_date_range(self):
         start = datetime(year=2021, month=11, day=1, hour=2)
         end = datetime(year=2021, month=11, day=2, hour=2)
