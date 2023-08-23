@@ -33,10 +33,10 @@ The following is taken from [this](https://github.com/Azure/azure-cli/issues/207
 # Create a new service principal
 $ az ad sp create-for-rbac --role Reader --scope /subscriptions/00000000-0000-0000-0000-000000000001
 {
-  "appId": "00000000-0000-0000-0000-000000000002",  # take note of this for later
+  "appId": "00000000-0000-0000-0000-000000000002",  # This is the Client ID
   "displayName": "azure-2001-01-01-07-00-00",
-  "password": "xxx",  # take note of this for later
-  "tenant": "00000000-0000-0000-0000-000000000003"  # take note of this for later
+  "password": "xxx",  # This is the Client Secret
+  "tenant": "00000000-0000-0000-0000-000000000003"  # This is the Tenant ID
 }
 
 # Query its objectId
