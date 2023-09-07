@@ -70,10 +70,7 @@ def disable_subscription(subscription_id: UUID) -> None:
     try:
         SUBSCRIPTION_CLIENT.subscription.cancel(str(subscription_id))
     except azure_exceptions.HttpResponseError as e:
-        is_disabled = (
-            "Subscription is not in active state and is hence marked as read-only"
-            in e.error.message
-        )
+        is_disabled = "Subscription is not in active state" in e.error.message
 
         # It's fine if we can't disable it because it is already inactive.
         if is_disabled:
