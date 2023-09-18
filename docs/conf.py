@@ -8,12 +8,7 @@ from unittest.mock import MagicMock
 import pydantic
 
 
-# Add repo root to path for autodoc
-
-sys.path.insert(0, os.path.abspath(".."))
-
-# Patch Pulumi so that importing constants.py doesn't cause errors
-
+# Patch Pydantic so that missing doen't cause errors
 
 pydantic.BaseSettings = MagicMock()
 
