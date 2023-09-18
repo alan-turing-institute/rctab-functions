@@ -3,8 +3,12 @@ name = "rctab-usage-function"
 version = "0.1.0"  # Do not change
 description = "Function app to collect usage data"
 authors = []
-#packages = [
-#]
+packages = [
+    {include = "usage"},
+    {include = "utils"},
+    {include = "costmanagement"},
+    {include = "monthly_usage"},
+]
 
 [tool.poetry.dependencies]
 python = "^3.10"
@@ -36,12 +40,12 @@ line-width = 88
 #[tool.setuptools]
 #py-modules = []
 
-[tool.setuptools.packages.find]
-where = ["."]
+#[tool.setuptools.packages.find]
+#where = ["."]
 #include = ["costmanagement", "usage", "monthly_usage", "utils"]
-include = ["usage_function"]
-exclude = []
-namepsaces = false
+#include = ["usage_function"]
+#exclude = []
+#namepsaces = false
 
 [build-system]
 requires = ["poetry-core"]
