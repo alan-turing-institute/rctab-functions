@@ -1540,32 +1540,7 @@ secure = ["certifi", "cryptography (>=1.9)", "idna (>=2.0.0)", "pyopenssl (>=17.
 socks = ["pysocks (>=1.5.6,!=1.5.7,<2.0)"]
 zstd = ["zstandard (>=0.18.0)"]
 
-[[package]]
-name = "usage-function"
-version = "0.1.0"
-description = "Function app to collect usage data"
-optional = false
-python-versions = "^3.10"
-files = []
-develop = false
-
-[package.dependencies]
-azure-functions = "^1.7.2"
-azure-identity = "^1.6.1"
-azure-mgmt-consumption = "^8.0.0"
-azure-mgmt-costmanagement = "^3.0.0"
-azure-mgmt-managementgroups = "^1.0.0"
-azure-mgmt-subscription = "^1.0.0"
-opencensus-ext-azure = "^1.1.7"
-pydantic = {version = "^1.8.2", extras = ["dotenv"]}
-PyJWT = {version = "^2.1.0", extras = ["crypto"]}
-requests = "^2.26.0"
-
-[package.source]
-type = "directory"
-url = "../usage_function"
-
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "0269342f053f3c385a20fa3f9220cdb9ccc8e21c1c539e41a108ba46ec89f0ce"
+content-hash = "6200a63add5329e01dc104a6f3355f312de8aa05eff18d8cdde3e75b142149e1"

@@ -12,10 +12,9 @@ sphinx = "^7.2.6"
 sphinx-rtd-theme = "^1.3.0"
 sphinxcontrib-napoleon = "^0.7"
 myst-parser = "^2.0.0"
-rctab-controller-function = {path = "../controller_function"}
-rctab-status-function = {path = "../status_function"}
-usage-function = {path = "../usage_function"}
 rctab-usage-function = {path = "../usage_function"}
+rctab-status-function = {path = "../status_function"}
+rctab-controller-function = {path = "../controller_function"}
 
 
 [build-system]

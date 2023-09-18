@@ -1,13 +1,13 @@
-Welcome to rctab-infrastructure's documentation!
+Welcome to rctab-functions' documentation!
 ================================================
 
-.. automodule:: controller_function.controller.models
+.. automodule:: controller.models
     :members:
 
-.. automodule:: status_function.status.models
+.. automodule:: status.models
     :members:
 
-.. automodule:: usage_function.utils.models
+.. automodule:: utils.models
     :members:
 
 .. toctree::
