@@ -1,5 +1,7 @@
 # RCTab Management Functions
 
+[![Documentation Status](https://readthedocs.org/projects/rctab-functions/badge/?version=latest)](https://rctab-functions.readthedocs.io/en/latest/?badge=latest)
+
 The RCTab Management Functions and scripts for deploying as Azure Function Apps.
 
 ## Contents
