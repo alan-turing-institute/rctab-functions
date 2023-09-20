@@ -4,6 +4,7 @@ Welcome to rctab-functions' documentation!
 .. toctree::
    :maxdepth: 2
    :caption: Contents
+   :hidden:
 
    sometext
 
