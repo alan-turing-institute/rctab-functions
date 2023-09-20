@@ -3,13 +3,14 @@ Welcome to rctab-functions' documentation!
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Contents
 
    sometext
 
 .. autosummary::
    :toctree: _autosummary
    :recursive:
+   :caption: Docstrings
 
    controller
    status
