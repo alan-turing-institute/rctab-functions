@@ -1,20 +1,21 @@
 Welcome to rctab-functions' documentation!
 ================================================
 
-.. automodule:: controller.models
-    :members:
-
-.. automodule:: status.models
-    :members:
-
-.. automodule:: utils.models
-    :members:
-
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
    sometext
+
+.. autosummary::
+   :toctree: _autosummary
+   :recursive:
+
+   controller
+   status
+   usage
+   utils xyz
+
 
 Indices and tables
 ==================

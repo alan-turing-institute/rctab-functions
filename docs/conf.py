@@ -23,7 +23,7 @@ version = "n/a"
 release = version
 
 templates_path = ["_templates"]
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+exclude_patterns = ["venv", "_build", "Thumbs.db", ".DS_Store"]
 
 # -- General configuration
 
@@ -32,6 +32,7 @@ extensions = [
     "sphinx.ext.doctest",
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
+    "sphinx.ext.napoleon",
 ]
 
 # -- Options for HTML output
@@ -46,3 +47,8 @@ html_logo = "RCTab-hex.png"
 def setup(app):
     """Tasks to perform during app setup."""
     app.add_css_file("css/custom.css")
+
+
+# -- Options for autosummary extension
+
+autosummary_generate = True
