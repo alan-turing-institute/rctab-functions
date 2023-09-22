@@ -1,12 +1,25 @@
-Welcome to rctab-functions' documentation!
-================================================
+Welcome to the RCTab Functions' documentation!
+==============================================
+
+The RCTab Management Functions and scripts for deploying as Azure Function Apps.
+
+
+.. toctree::
+   :maxdepth: 2
+   :caption: External Links
+   :glob:
+   :hidden:
+
+   RCTab docs home <https://rctab.readthedocs.io/en/latest/>
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents
    :hidden:
+   :glob:
 
-   sometext
+   Home <self>
+   content/*
 
 .. autosummary::
    :toctree: _autosummary
