@@ -19,7 +19,10 @@ The RCTab Management Functions and scripts for deploying as Azure Function Apps.
    :glob:
 
    Home <self>
-   content/*
+   content/setup
+   content/controller
+   content/status
+   content/usage
 
 .. autosummary::
    :toctree: _autosummary
@@ -29,7 +32,7 @@ The RCTab Management Functions and scripts for deploying as Azure Function Apps.
    controller
    status
    usage
-   utils xyz
+   utils
 
 
 Indices and tables
