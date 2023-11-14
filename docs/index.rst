@@ -1,8 +1,10 @@
 Welcome to the RCTab Functions' documentation!
 ==============================================
 
-The RCTab Management Functions and scripts for deploying as Azure Function Apps.
-
+RCTab uses three function apps to collect data and enable/disable subscriptions.
+They can be run locally or deployed to Azure.
+They require different permissions on Azure and have different configuration options but otherwise are deployed and triggered in the same way.
+See the pages for the individual functions for more details.
 
 .. toctree::
    :maxdepth: 2
@@ -33,7 +35,6 @@ The RCTab Management Functions and scripts for deploying as Azure Function Apps.
    status
    usage
    utils
-
 
 Indices and tables
 ==================
