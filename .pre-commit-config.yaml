@@ -27,7 +27,6 @@ repos:
     rev: v8.16.1
     hooks:
       - id: gitleaks
-        args: ["--config", ".gitleaks.toml"]
   - repo: 'https://github.com/PyCQA/pydocstyle'
     rev: 6.3.0
     hooks:

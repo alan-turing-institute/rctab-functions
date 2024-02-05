@@ -611,5 +611,13 @@ class TestAuth(TestCase):
             self.assertEqual("status-app", username)
 
 
+class TestLoggingUtils(TestCase):
+    def test_called_twice(self):
+        """Adding multiple loggers can cause large storage bills ££££."""
+        with self.assertRaises(RuntimeError):
+            status.logutils.set_log_handler("a")
+            status.logutils.set_log_handler("a")
+
+
 if __name__ == "__main__":
     main()

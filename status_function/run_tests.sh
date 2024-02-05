@@ -34,6 +34,7 @@ echo "Running unit tests..."
 API_URL="http://some.api.url" \
 PRIVATE_KEY="-----BEGIN OPENSSH PRIVATE KEY-----mykey1234-----END OPENSSH PRIVATE KEY-----" \  # gitleaks:allow
 AZURE_TENANT_ID="00000000-0000-0000-0000-000000000000" \
+CENTRAL_LOGGING_CONNECTION_STRING="InstrumentationKey=00000000-0000-0000-0000-000000000000" \
 python -m coverage run \
   --omit=".venv/*","tests/*" \
   -m unittest discover \
