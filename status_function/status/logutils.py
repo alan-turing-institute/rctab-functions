@@ -55,6 +55,10 @@ def set_log_handler(name: str = "status") -> None:
     logger = logging.getLogger(name)
     log_settings = settings.get_settings()
     if log_settings.CENTRAL_LOGGING_CONNECTION_STRING:
+        for handler in logger.handlers:
+            if isinstance(handler, AzureLogHandler):
+                raise RuntimeError("AzureLogHandler already added to logger.")
+
         custom_dimensions = {"logger_name": f"logger_{name}"}
         handler = AzureLogHandler(
             connection_string=log_settings.CENTRAL_LOGGING_CONNECTION_STRING
