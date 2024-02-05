@@ -1,9 +1,12 @@
 """Copied from https://stackoverflow.com/a/64129363/3324095 and slightly modified."""
+from typing import Optional
+
 from azure.core.pipeline import PipelineContext, PipelineRequest
 from azure.core.pipeline.policies import BearerTokenCredentialPolicy
 from azure.core.pipeline.transport import HttpRequest
 from azure.identity import DefaultAzureCredential
 from msrest.authentication import BasicTokenAuthentication
+from requests import Session
 
 
 class CredentialWrapper(BasicTokenAuthentication):
@@ -11,7 +14,7 @@ class CredentialWrapper(BasicTokenAuthentication):
 
     def __init__(
         self,
-        credential: DefaultAzureCredential = None,
+        credential: Optional[DefaultAzureCredential] = None,
         resource_id: str = "https://management.azure.com/.default",
         **kwargs: dict
     ):
@@ -29,7 +32,7 @@ class CredentialWrapper(BasicTokenAuthentication):
         Keyword Args:
             Any other parameter accepted by BasicTokenAuthentication
         """
-        super().__init__(None)
+        super().__init__({"": ""})
         if credential is None:
             credential = DefaultAzureCredential(
                 exclude_visual_studio_code_credential=True
@@ -58,7 +61,7 @@ class CredentialWrapper(BasicTokenAuthentication):
         token = request.http_request.headers["Authorization"].split(" ", 1)[1]
         self.token = {"access_token": token}
 
-    def signed_session(self, session=None) -> DefaultAzureCredential:
+    def signed_session(self, session=None) -> Session:
         """Sign the session.
 
         Args:

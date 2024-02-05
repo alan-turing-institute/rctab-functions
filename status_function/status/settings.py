@@ -36,9 +36,7 @@ class Settings(BaseSettings):
         env_file_encoding = "utf-8"
 
     @validator("PRIVATE_KEY")
-    def correct_start_and_end(
-        cls: Config, v: str
-    ) -> str:  # pylint: disable=no-self-argument
+    def correct_start_and_end(cls, v: str) -> str:  # pylint: disable=no-self-argument
         """Check that the private key is a private key.
 
         Args:
@@ -69,4 +67,4 @@ def get_settings() -> Settings:
     Returns:
         The settings.
     """
-    return Settings()
+    return Settings()  # type: ignore

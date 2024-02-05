@@ -1,5 +1,6 @@
 """Utils to send logs to Azure Application Insights."""
 import logging
+from typing import Optional
 
 from opencensus.ext.azure.log_exporter import AzureLogHandler
 
@@ -9,7 +10,7 @@ from status import settings
 class CustomDimensionsFilter(logging.Filter):
     """Add application-wide properties to AzureLogHandler records."""
 
-    def __init__(self, custom_dimensions: dict = None) -> None:
+    def __init__(self, custom_dimensions: Optional[dict] = None) -> None:
         """Add custom dimensions to the log record.
 
         Args:
