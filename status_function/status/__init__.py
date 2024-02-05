@@ -10,6 +10,7 @@ import logging
 from datetime import datetime
 from functools import lru_cache
 from typing import Any, Optional
+from uuid import UUID
 
 import azure.functions as func
 import requests
@@ -24,6 +25,7 @@ from pydantic import HttpUrl
 from status import models, settings
 from status.auth import BearerAuth
 from status.logutils import set_log_handler
+from status.models import RoleAssignment
 from status.wrapper import CredentialWrapper
 
 logging.basicConfig(
@@ -241,7 +243,7 @@ def get_role_assignment_models(
 def get_subscription_role_assignment_models(
     subscription: Any,
     graph_client: GraphRbacManagementClient,
-) -> list:
+) -> list[RoleAssignment]:
     """Get the role assignment models for each a subscription.
 
     Args:
@@ -259,7 +261,7 @@ def get_subscription_role_assignment_models(
         for assignment in assignments_list:
             role_assignments_models += get_role_assignment_models(
                 assignment,
-                role_def_dict.get(assignment.properties.role_definition_id),
+                role_def_dict.get(assignment.properties.role_definition_id, "Unknown"),
                 graph_client,
             )
     except CloudError as e:
@@ -271,7 +273,7 @@ def get_subscription_role_assignment_models(
     return role_assignments_models
 
 
-def get_all_status(tenant_id: str) -> list[models.SubscriptionStatus]:
+def get_all_status(tenant_id: UUID) -> list[models.SubscriptionStatus]:
     """Get status and role assignments for all subscriptions.
 
     Args:
@@ -284,7 +286,7 @@ def get_all_status(tenant_id: str) -> list[models.SubscriptionStatus]:
     started_at = datetime.now()
 
     graph_client = GraphRbacManagementClient(
-        credentials=GRAPH_CREDENTIALS, tenant_id=tenant_id
+        credentials=GRAPH_CREDENTIALS, tenant_id=str(tenant_id)
     )
 
     client = SubscriptionClient(credential=CREDENTIALS)
@@ -303,7 +305,7 @@ def get_all_status(tenant_id: str) -> list[models.SubscriptionStatus]:
                 subscription_id=subscription.subscription_id,
                 display_name=subscription.display_name,
                 state=subscription.state,
-                role_assignments=role_assignments_models,
+                role_assignments=tuple(role_assignments_models),
             )
         )
 

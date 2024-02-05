@@ -411,7 +411,7 @@ class TestStatus(TestCase):
 
                         mock_graph_client.assert_called_with(
                             credentials=status.GRAPH_CREDENTIALS,
-                            tenant_id=UUID(int=1000),
+                            tenant_id=str(UUID(int=1000)),
                         )
 
                         mock_get_object_params.assert_called_with(
