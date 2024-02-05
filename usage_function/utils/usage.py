@@ -2,7 +2,7 @@
 import logging
 from datetime import datetime, timedelta
 from functools import lru_cache
-from typing import Dict
+from typing import Dict, Optional
 from uuid import UUID
 
 import requests
@@ -30,8 +30,8 @@ def date_range(start_date, end_date):
 def get_all_usage(
     start_time: datetime,
     end_time: datetime,
-    billing_account_id: str = None,
-    mgmt_group: str = None,
+    billing_account_id: Optional[str] = None,
+    mgmt_group: Optional[str] = None,
 ):
     """Get Azure usage data for a subscription between start_time and end_time.
 

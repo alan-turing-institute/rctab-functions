@@ -84,7 +84,7 @@ def get_all_usage(start_datetime: datetime, end_datetime: datetime, mgmt_group: 
     # longer than max_timeperiod. covered_to will keep track of the last day for which
     # we have data so far.
     covered_to = start_datetime - timedelta(days=1)
-    data = {}
+    data: dict[tuple, float] = {}
     while covered_to < end_datetime:
         # The time window to cover in this query, inclusive.
         window_start = covered_to + timedelta(days=1)
@@ -190,5 +190,5 @@ def main(mytimer: func.TimerRequest) -> None:
     end_datetime = datetime.now()
     # TODO What should this start date be?
     start_datetime = datetime(year=end_datetime.year, month=1, day=1)
-    usage = get_all_usage(start_datetime, end_datetime, config.CM_MGMT_GROUP)
+    usage = get_all_usage(start_datetime, end_datetime, config.CM_MGMT_GROUP or "")
     send_usage(config.API_URL, usage)
