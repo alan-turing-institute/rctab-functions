@@ -64,4 +64,4 @@ class Settings(BaseSettings):
 @lru_cache()
 def get_settings() -> Settings:
     """Get the global settings for the app."""
-    return Settings()
+    return Settings()  # type: ignore
