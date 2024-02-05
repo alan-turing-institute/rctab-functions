@@ -34,6 +34,7 @@ logging.basicConfig(
     datefmt="%d/%m/%Y %I:%M:%S %p",
 )
 logger = logging.getLogger(__name__)
+set_log_handler(__name__)
 
 # We should only need one set of credentials.
 CREDENTIALS = DefaultAzureCredential()
@@ -331,7 +332,6 @@ def main(mytimer: func.TimerRequest) -> None:
         format="%(asctime)s %(message)s",
         datefmt="%d/%m/%Y %I:%M:%S %p",
     )
-    set_log_handler(__name__)
     logger.warning("Status function starting.")
 
     if mytimer.past_due:
