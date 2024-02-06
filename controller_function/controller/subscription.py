@@ -49,7 +49,11 @@ def enable_subscription(subscription_id: UUID) -> None:
     try:
         SUBSCRIPTION_CLIENT.subscription.enable(str(subscription_id))
     except azure_exceptions.HttpResponseError as e:
-        is_enabled = "not in suspended state" in e.error.message
+        is_enabled = (
+            ("not in suspended state" in e.error.message)
+            if (e.error and e.error.message)
+            else False
+        )
 
         # It's fine if we can't enable it because it is already active.
         if is_enabled:
@@ -70,7 +74,11 @@ def disable_subscription(subscription_id: UUID) -> None:
     try:
         SUBSCRIPTION_CLIENT.subscription.cancel(str(subscription_id))
     except azure_exceptions.HttpResponseError as e:
-        is_disabled = "Subscription is not in active state" in e.error.message
+        is_disabled = (
+            ("Subscription is not in active state" in e.error.message)
+            if (e.error and e.error.message)
+            else False
+        )
 
         # It's fine if we can't disable it because it is already inactive.
         if is_disabled:

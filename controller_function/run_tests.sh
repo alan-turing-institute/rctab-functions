@@ -40,6 +40,11 @@ status=$((status+$?))
 python -m coverage report --show-missing
 status=$((status+$?))
 
+# Check types with MyPy
+echo "Running type checking..."
+python -m mypy --config-file tests/mypy.ini controller/ tests/
+status=$((status+$?))
+
 # [optional] Check Markdown coding style with Ruby's markdown lint
 # https://github.com/markdownlint/markdownlint
 if ! command -v mdl &> /dev/null
