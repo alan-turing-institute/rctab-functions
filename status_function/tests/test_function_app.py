@@ -1,4 +1,5 @@
 """Tests for status package."""
+import logging
 from datetime import datetime
 from types import SimpleNamespace
 from unittest import TestCase, main
@@ -613,10 +614,15 @@ class TestAuth(TestCase):
 
 class TestLoggingUtils(TestCase):
     def test_called_twice(self):
-        """Adding multiple loggers can cause large storage bills ££££."""
-        with self.assertRaises(RuntimeError):
-            status.logutils.set_log_handler("a")
-            status.logutils.set_log_handler("a")
+        """Adding multiple loggers could cause large storage bills."""
+        with patch("status.settings.get_settings") as mock_get_settings:
+            mock_get_settings.return_value.CENTRAL_LOGGING_CONNECTION_STRING = "my-str"
+
+            with patch("status.logutils.AzureLogHandler", new=MagicMock):
+                status.logutils.add_log_handler_once("a")
+                status.logutils.add_log_handler_once("a")
+        handlers = logging.getLogger("a").handlers
+        self.assertEqual(1, len(handlers))
 
 
 if __name__ == "__main__":

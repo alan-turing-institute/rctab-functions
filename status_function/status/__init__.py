@@ -24,8 +24,8 @@ from pydantic import HttpUrl
 
 from status import models, settings
 from status.auth import BearerAuth
-from status.logutils import set_log_handler
 from status.models import RoleAssignment
+from status.logutils import add_log_handler_once
 from status.wrapper import CredentialWrapper
 
 logging.basicConfig(
@@ -34,7 +34,6 @@ logging.basicConfig(
     datefmt="%d/%m/%Y %I:%M:%S %p",
 )
 logger = logging.getLogger(__name__)
-set_log_handler(__name__)
 
 # We should only need one set of credentials.
 CREDENTIALS = DefaultAzureCredential()
@@ -332,6 +331,7 @@ def main(mytimer: func.TimerRequest) -> None:
         format="%(asctime)s %(message)s",
         datefmt="%d/%m/%Y %I:%M:%S %p",
     )
+    add_log_handler_once(__name__)
     logger.warning("Status function starting.")
 
     if mytimer.past_due:
