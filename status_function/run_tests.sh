@@ -30,13 +30,12 @@ status=$((status+$?))
 
 # Run our unit tests with code coverage
 echo "Running unit tests..."
-# shellcheck disable=SC2140
-API_URL="http://some.api.url" \
-PRIVATE_KEY="-----BEGIN OPENSSH PRIVATE KEY-----mykey1234-----END OPENSSH PRIVATE KEY-----" \  # gitleaks:allow
-AZURE_TENANT_ID="00000000-0000-0000-0000-000000000000" \
-CENTRAL_LOGGING_CONNECTION_STRING="InstrumentationKey=00000000-0000-0000-0000-000000000000" \
+export API_URL="http://some.api.url"
+export PRIVATE_KEY="-----BEGIN OPENSSH PRIVATE KEY-----mykey1234-----END OPENSSH PRIVATE KEY-----"  # gitleaks:allow
+export AZURE_TENANT_ID="00000000-0000-0000-0000-000000000000"
+export CENTRAL_LOGGING_CONNECTION_STRING="InstrumentationKey=00000000-0000-0000-0000-000000000000"
 python -m coverage run \
-  --omit=".venv/*","tests/*" \
+  --omit=".venv/*,tests/*" \
   -m unittest discover \
   --start-directory=tests/
 status=$((status+$?))
