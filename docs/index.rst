@@ -3,7 +3,7 @@ Welcome to the RCTab Functions' documentation!
 
 RCTab uses three function apps to collect data and enable/disable subscriptions.
 They can be run locally or deployed to Azure.
-They require different permissions on Azure and have different configuration options but otherwise are deployed and triggered in the same way.
+Each function app requires different permissions on Azure and has different configuration options but they are deployed and triggered in the same way.
 See the pages for the individual functions for more details.
 
 .. toctree::
