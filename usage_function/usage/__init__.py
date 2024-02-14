@@ -7,7 +7,7 @@ import azure.functions as func
 from azure.core.exceptions import HttpResponseError
 
 import utils.settings
-from utils.logutils import set_log_handler
+from utils.logutils import add_log_handler_once
 from utils.usage import date_range, get_all_usage, retrieve_and_send_usage
 
 
@@ -23,7 +23,7 @@ def main(mytimer: func.TimerRequest) -> None:
         datefmt="%d/%m/%Y %I:%M:%S %p",
     )
 
-    set_log_handler(__name__)
+    add_log_handler_once(__name__)
     logger = logging.getLogger(__name__)
 
     logger.warning("Usage function starting.")

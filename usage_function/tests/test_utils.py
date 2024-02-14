@@ -1,4 +1,5 @@
 """Tests for function app utils."""
+import logging
 from datetime import datetime, timedelta
 from unittest import TestCase, main
 from unittest.mock import MagicMock, call, patch
@@ -240,6 +241,19 @@ class TestSettings(TestCase):
                 _env_file=None,
             ),
         )
+
+
+class TestLoggingUtils(TestCase):
+    def test_called_twice(self):
+        """Adding multiple loggers could cause large storage bills."""
+        with patch("utils.settings.get_settings") as mock_get_settings:
+            mock_get_settings.return_value.CENTRAL_LOGGING_CONNECTION_STRING = "my-str"
+
+            with patch("utils.logutils.AzureLogHandler", new=MagicMock):
+                utils.logutils.add_log_handler_once("a")
+                utils.logutils.add_log_handler_once("a")
+        handlers = logging.getLogger("a").handlers
+        self.assertEqual(1, len(handlers))
 
 
 if __name__ == "__main__":
