@@ -11,7 +11,7 @@ from azure.mgmt.costmanagement.models import QueryDefinition
 import utils.settings
 from utils import models
 from utils.auth import BearerAuth
-from utils.logutils import set_log_handler
+from utils.logutils import add_log_handler_once
 
 logging.basicConfig(
     level=logging.WARNING,
@@ -173,7 +173,7 @@ def main(mytimer: func.TimerRequest) -> None:
     and POST it the RCTab server.
     """
     # todo remove reference to EA group
-    set_log_handler(__name__)
+    add_log_handler_once(__name__)
 
     if mytimer.past_due:
         logger.warning(

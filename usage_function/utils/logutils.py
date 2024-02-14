@@ -24,7 +24,7 @@ class CustomDimensionsFilter(logging.Filter):
         return True
 
 
-def set_log_handler(name: str = "usage_function") -> None:
+def add_log_handler_once(name: str = "usage_function") -> None:
     """Add an Azure log handler to the logger with provided name.
 
     The log data is sent to the Azure Application Insights instance associated
@@ -38,6 +38,11 @@ def set_log_handler(name: str = "usage_function") -> None:
     logger = logging.getLogger(name)
     settings = utils.settings.get_settings()
     if settings.CENTRAL_LOGGING_CONNECTION_STRING:
+        for handler in logger.handlers:
+            # Only allow one AzureLogHandler per logger
+            if isinstance(handler, AzureLogHandler):
+                return
+
         custom_dimensions = {"logger_name": f"logger_{name}"}
         handler = AzureLogHandler(
             connection_string=settings.CENTRAL_LOGGING_CONNECTION_STRING
