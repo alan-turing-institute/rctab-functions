@@ -24,8 +24,8 @@ from pydantic import HttpUrl
 
 from status import models, settings
 from status.auth import BearerAuth
-from status.models import RoleAssignment
 from status.logutils import add_log_handler_once
+from status.models import RoleAssignment
 from status.wrapper import CredentialWrapper
 
 logging.basicConfig(
