@@ -30,10 +30,10 @@ status=$((status+$?))
 
 # Run our unit tests with code coverage
 echo "Running unit tests..."
-# shellcheck disable=SC2140
-python -m \
-  coverage run --omit=".venv/*","tests/*" -m \
-  unittest discover --start-directory=tests/
+python -m coverage run \
+  --omit=".venv/*,tests/*" \
+  -m unittest discover \
+  --start-directory=tests/
 status=$((status+$?))
 
 # Show the lines our tests miss

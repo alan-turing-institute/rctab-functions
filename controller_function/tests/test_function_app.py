@@ -1,5 +1,6 @@
 """Tests for controller package."""
 import json
+import logging
 from unittest import TestCase, main
 from unittest.mock import MagicMock, call, patch
 from uuid import UUID
@@ -183,6 +184,19 @@ class TestAuth(TestCase):
             )
             username = payload.get("sub")
             self.assertEqual("controller-app", username)
+
+
+class TestLoggingUtils(TestCase):
+    def test_called_twice(self):
+        """Adding multiple loggers could cause large storage bills."""
+        with patch("controller.settings.get_settings") as mock_get_settings:
+            mock_get_settings.return_value.CENTRAL_LOGGING_CONNECTION_STRING = "my-str"
+
+            with patch("controller.logutils.AzureLogHandler", new=MagicMock):
+                controller.logutils.add_log_handler_once("a")
+                controller.logutils.add_log_handler_once("a")
+        handlers = logging.getLogger("a").handlers
+        self.assertEqual(1, len(handlers))
 
 
 if __name__ == "__main__":
