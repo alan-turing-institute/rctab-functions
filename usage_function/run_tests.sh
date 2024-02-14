@@ -32,7 +32,6 @@ status=$((status+$?))
 
 # Run our unit tests with code coverage
 echo "Running unit tests..."
-# shellcheck disable=SC2140
 python -m coverage run \
   --omit=".venv/*,tests/*,venv/*" \
   -m unittest discover \
