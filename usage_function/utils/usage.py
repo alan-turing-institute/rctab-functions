@@ -64,11 +64,10 @@ def get_all_usage(
             f"/providers/Microsoft.Management/managementGroups/{mgmt_group}"
         )
 
-    # metric_expression options: ActualCost or AmortizedCost
-    #   Actual Cost - Provides data to reconcile with your monthly bill.
-    #   Amortized Cost - This dataset is similar to the Actual Cost dataset except
-    #     that - the EffectivePrice for the usage that gets reservation discount is
-    #     the prorated cost of the reservation (instead of being zero).
+    # Actual Cost - Provides data to reconcile with your monthly bill.
+    # Amortized Cost - This dataset is similar to the Actual Cost dataset except
+    # that the EffectivePrice for the usage that gets reservation discount is
+    # the prorated cost of the reservation (instead of being zero).
     metric_expression = "AmortizedCost"
 
     data = consumption_client.usage_details.list(
