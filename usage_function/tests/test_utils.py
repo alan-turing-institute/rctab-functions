@@ -180,24 +180,26 @@ class TestUsage(TestCase):
 class TestSettings(TestCase):
     """Tests for the utils.settings module."""
 
+    private_key = rsa.generate_private_key(
+        public_exponent=65537,
+        key_size=2048,
+    )
+    private_key_str = private_key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.OpenSSH,
+        encryption_algorithm=serialization.NoEncryption(),
+    ).decode("utf-8")
+
     def test_valid_settings(self):
         """Check that we can make a Settings instance, given the right arguments."""
-        private_key = rsa.generate_private_key(
-            public_exponent=65537,
-            key_size=2048,
-        )
-        private_key_str = private_key.private_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PrivateFormat.OpenSSH,
-            encryption_algorithm=serialization.NoEncryption(),
-        ).decode("utf-8")
+
         utils.settings.Settings(
-            PRIVATE_KEY=private_key_str,
+            PRIVATE_KEY=self.private_key_str,
             API_URL="https://a.b.com",
-            BILLING_ACCOUNT_ID="111111",
             USAGE_HISTORY_DAYS=10,
             USAGE_HISTORY_DAYS_OFFSET=1,
             LOG_LEVEL="WARNING",
+            MGMT_GROUP="some-mgmt-group",
             _env_file=None,
         )
 
@@ -215,32 +217,57 @@ class TestSettings(TestCase):
         settings = utils.settings.Settings(
             PRIVATE_KEY=private_key_str,
             API_URL="https://a.b.com",
-            BILLING_ACCOUNT_ID="111111",
+            BILLING_ACCOUNT_ID="12345",
             _env_file=None,
         )
 
         self.assertEqual(settings.USAGE_HISTORY_DAYS_OFFSET, 0)
         self.assertEqual(settings.USAGE_HISTORY_DAYS, 3)
         self.assertEqual(settings.LOG_LEVEL, "WARNING")
+        self.assertIsNone(settings.CM_MGMT_GROUP)
+        self.assertIsNone(settings.MGMT_GROUP)
 
     def test_key_validation(self):
-        self.assertRaises(
-            ValueError,
-            lambda: utils.settings.Settings(
+        with self.assertRaisesRegex(
+            ValueError, 'Expected key to end with "-----END OPENSSH PRIVATE KEY-----".'
+        ):
+            utils.settings.Settings(
                 API_URL="https://a.b.com",
                 PRIVATE_KEY="-----BEGIN OPENSSH PRIVATE KEY-----",
                 _env_file=None,
-            ),
-        )
+            )
 
-        self.assertRaises(
+        with self.assertRaisesRegex(
             ValueError,
-            lambda: utils.settings.Settings(
+            'Expected key to start with "-----BEGIN OPENSSH PRIVATE KEY-----".',
+        ):
+            utils.settings.Settings(
                 API_URL="https://a.b.com",
                 PRIVATE_KEY="-----END OPENSSH PRIVATE KEY-----",
                 _env_file=None,
-            ),
-        )
+            )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "Exactly one of MGMT_GROUP and BILLING_ACCOUNT_ID should be empty.",
+        ):
+            utils.settings.Settings(
+                PRIVATE_KEY=self.private_key_str,
+                API_URL="https://a.b.com",
+                MGMT_GROUP="x",
+                BILLING_ACCOUNT_ID="y",
+                _env_file=None,
+            )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "Exactly one of MGMT_GROUP and BILLING_ACCOUNT_ID should be empty.",
+        ):
+            utils.settings.Settings(
+                PRIVATE_KEY=self.private_key_str,
+                API_URL="https://a.b.com",
+                _env_file=None,
+            )
 
 
 class TestLoggingUtils(TestCase):
