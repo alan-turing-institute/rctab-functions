@@ -2,8 +2,8 @@
   "bindings": [
     {
       "direction": "in",
-      "name": "mytimer",
-      "schedule": "1 1 1 7 * *",
+      "name": "bi-hourly_on_7th_and_8th",
+      "schedule": "10 0,2,4,6,8,10,12,14,16,18,20,22 7,8 * *",
       "type": "timerTrigger"
     }
   ],

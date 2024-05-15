@@ -1,5 +1,5 @@
 """Tests for Azure functions."""
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from unittest import TestCase, main
 from unittest.mock import MagicMock, call, patch
 from uuid import UUID
@@ -107,18 +107,76 @@ class TestMonthlyUsage(TestCase):
 
         with patch("monthly_usage.get_all_usage") as mock_get_all, patch(
             "monthly_usage.retrieve_usage"
-        ) as mock_retrieve, patch("monthly_usage.date_range") as mock_date_range, patch(
+        ) as mock_retrieve, patch("monthly_usage.get_dates") as mock_get_dates, patch(
             "monthly_usage.send_usage"
         ) as mock_send, patch(
             "utils.settings.get_settings"
         ) as mock_get_settings:
-            mock_date_range.return_value = [0]
+            mock_get_dates.return_value = date(2024, 1, 1), date(2024, 1, 2)
             mock_get_settings.return_value = settings
             monthly_usage.main(mock_timer)
 
-            mock_get_all.assert_called_once()
+            mock_get_all.assert_called_once_with(
+                datetime(2024, 1, 1),
+                datetime(2024, 1, 2),
+                billing_account_id="88111111",
+                mgmt_group=None,
+            )
             mock_retrieve.assert_called_once()
             mock_send.assert_called_once()
+
+    def test_get_date_range(self):
+        """Test that the get_date_range function returns the expected dates."""
+
+        with patch("monthly_usage.datetime") as mock_datetime:
+            # On hour 0 of the 7th day, we expect to get dates 1 and 2.
+            mock_datetime.now.return_value = datetime(2024, 2, 7, 0, 4, 56)
+
+            expected_dates = (date(2024, 1, 1), date(2024, 1, 2))
+
+            actual_dates = monthly_usage.get_dates()
+
+            self.assertTupleEqual(expected_dates, actual_dates)
+
+        with patch("monthly_usage.datetime") as mock_datetime:
+            # On hour 2 of the 7th day, we expect to get dates 3 and 4.
+            mock_datetime.now.return_value = datetime(2024, 2, 7, 2, 6, 0)
+
+            expected_dates = (date(2024, 1, 3), date(2024, 1, 4))
+
+            actual_dates = monthly_usage.get_dates()
+
+            self.assertTupleEqual(expected_dates, actual_dates)
+
+        with patch("monthly_usage.datetime") as mock_datetime:
+            # Some hours of the 8th day don't map to valid dates.
+            mock_datetime.now.return_value = datetime(2024, 2, 8, 22, 0, 0)
+
+            expected_dates = tuple()
+
+            actual_dates = monthly_usage.get_dates()
+
+            self.assertTupleEqual(expected_dates, actual_dates)
+
+        with patch("monthly_usage.datetime") as mock_datetime:
+            # For leap year February, we only expect one final date.
+            mock_datetime.now.return_value = datetime(2024, 3, 8, 4, 0, 0)
+
+            expected_dates = (date(2024, 2, 29),)
+
+            actual_dates = monthly_usage.get_dates()
+
+            self.assertTupleEqual(expected_dates, actual_dates)
+
+        with patch("monthly_usage.datetime") as mock_datetime:
+            # For months with 31 days, we only expect one final date.
+            mock_datetime.now.return_value = datetime(2024, 2, 8, 6, 0, 0)
+
+            expected_dates = (date(2024, 1, 31),)
+
+            actual_dates = monthly_usage.get_dates()
+
+            self.assertTupleEqual(expected_dates, actual_dates)
 
 
 class TestCostManagement(TestCase):
