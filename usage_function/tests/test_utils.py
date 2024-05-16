@@ -125,7 +125,7 @@ class TestUsage(TestCase):
 
                     expected_json = utils.usage.models.AllUsage(
                         usage_list=[usage]
-                    ).json()
+                    ).model_dump_json()
 
                     expected_call = call(
                         "https://123.234.345.456/accounting/all-usage",
@@ -156,7 +156,7 @@ class TestUsage(TestCase):
 
                     expected_json = utils.usage.models.AllUsage(
                         usage_list=[usage]
-                    ).json()
+                    ).model_dump_json()
 
                     mock_post.assert_called_once_with(
                         "https://123.234.345.456/accounting/all-usage",

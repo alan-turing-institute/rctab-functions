@@ -166,7 +166,7 @@ def send_usage(hostname_or_ip, all_item_list, monthly_usage_upload=False):
     for _ in range(2):
         resp = requests.post(
             hostname_or_ip + path,
-            models.AllUsage(usage_list=all_item_list).json(),
+            models.AllUsage(usage_list=all_item_list).model_dump_json(),
             auth=BearerAuth(),
             timeout=60,
         )
