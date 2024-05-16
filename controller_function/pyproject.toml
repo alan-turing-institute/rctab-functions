@@ -20,17 +20,15 @@ opencensus-ext-azure = "^1.1.7"
 
 
 [tool.poetry.group.dev.dependencies]
+black = "^24.4.2"
+coverage = "^7.5.1"
 flake8 = "^3.9.2"
-black = "^21.8b0"
-coverage = "^5.5"
-pulumi = "^3.12.0"
-pulumi-azure = "^4.18.0"
-pytest = "^6.2.5"
-pylint = "^2.17.4"
-pylint-absolute-imports = "^1.0.1"
-isort = "^5.12.0"
-mypy = "^1.8.0"
-types-requests = "^2.31.0.20240125"
+isort = "^5.13.2"
+mypy = "^1.10.0"
+pylint = "^3.2.0"
+pylint-absolute-imports = "^1.1.0"
+types-requests = "^2.31.0.20240406"  # Should match requests version
+
 
 [build-system]
 requires = ["poetry-core"]
