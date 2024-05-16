@@ -159,13 +159,13 @@ def send_usage(hostname_or_ip, all_item_list, monthly_usage_upload=False):
     logging.warning("Upload all items")
 
     if monthly_usage_upload:
-        path = "/accounting/monthly-usage"
+        path = "accounting/monthly-usage"
     else:
-        path = "/accounting/all-usage"
+        path = "accounting/all-usage"
 
     for _ in range(2):
         resp = requests.post(
-            hostname_or_ip + path,
+            str(hostname_or_ip) + path,
             models.AllUsage(usage_list=all_item_list).model_dump_json(),
             auth=BearerAuth(),
             timeout=60,
