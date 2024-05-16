@@ -65,8 +65,9 @@ def send_status(hostname_or_ip: HttpUrl, status_data: list) -> None:
     for _ in range(2):
         started_sending_at = datetime.now()
         resp = requests.post(
-            hostname_or_ip + "/accounting/all-status",
-            models.AllSubscriptionStatus(status_list=status_data).json(),
+            # todo: test for this change
+            str(hostname_or_ip) + "accounting/all-status",
+            models.AllSubscriptionStatus(status_list=status_data).model_dump_json(),
             auth=BearerAuth(),
             timeout=60,
         )
@@ -292,7 +293,7 @@ def get_all_status(tenant_id: UUID) -> list[models.SubscriptionStatus]:
     client = SubscriptionClient(credential=CREDENTIALS)
     subscriptions = client.subscriptions.list()
 
-    data = []
+    data: list[models.SubscriptionStatus] = []
     for i, subscription in enumerate(subscriptions):
         if i % 10 == 0:
             logger.info("%s subscriptions processed.", i)
@@ -300,14 +301,19 @@ def get_all_status(tenant_id: UUID) -> list[models.SubscriptionStatus]:
         role_assignments_models = get_subscription_role_assignment_models(
             subscription, graph_client
         )
-        data.append(
-            models.SubscriptionStatus(
-                subscription_id=subscription.subscription_id,
-                display_name=subscription.display_name,
-                state=subscription.state,
-                role_assignments=tuple(role_assignments_models),
+        if (
+            subscription.subscription_id is not None
+            and subscription.display_name is not None
+            and subscription.state is not None
+        ):
+            data.append(
+                models.SubscriptionStatus(
+                    subscription_id=subscription.subscription_id,
+                    display_name=subscription.display_name,
+                    state=subscription.state,
+                    role_assignments=tuple(role_assignments_models),
+                )
             )
-        )
 
     logger.warning("Status data retrieved in %s.", str(datetime.now() - started_at))
     return data

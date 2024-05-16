@@ -3,7 +3,8 @@ from functools import lru_cache
 from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseSettings, HttpUrl, validator
+from pydantic import HttpUrl, field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -22,20 +23,12 @@ class Settings(BaseSettings):
     PRIVATE_KEY: str
     AZURE_TENANT_ID: UUID  # Also used by the EnvironmentCredential
     LOG_LEVEL: str = "WARNING"
-    CENTRAL_LOGGING_CONNECTION_STRING: Optional[str]
+    CENTRAL_LOGGING_CONNECTION_STRING: Optional[str] = None
 
-    class Config:
-        """Configuration for the Settings class env file.
+    # Settings for the settings class itself.
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
-        Attributes:
-            env_file: The name of the .env file.
-            env_file_encoding: The encoding of the .env file.
-        """
-
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-
-    @validator("PRIVATE_KEY")
+    @field_validator("PRIVATE_KEY")
     def correct_start_and_end(cls, v: str) -> str:  # pylint: disable=no-self-argument
         """Check that the private key is a private key.
 
