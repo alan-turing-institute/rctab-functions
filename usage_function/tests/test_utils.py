@@ -10,7 +10,10 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from pydantic import HttpUrl, TypeAdapter
 
-import utils
+import utils.usage
+import utils.models
+import utils.logutils
+import utils.settings
 
 HTTP_ADAPTER: Final = TypeAdapter(HttpUrl)
 
@@ -123,9 +126,9 @@ class TestUsage(TestCase):
                             [example_usage_detail],
                         )
 
-                    usage = utils.usage.models.Usage(**usage_dict)
+                    usage = utils.models.Usage(**usage_dict)
 
-                    expected_json = utils.usage.models.AllUsage(
+                    expected_json = utils.models.AllUsage(
                         usage_list=[usage]
                     ).model_dump_json()
 
@@ -198,7 +201,7 @@ class TestSettings(TestCase):
 
         utils.settings.Settings(
             PRIVATE_KEY=self.private_key_str,
-            API_URL="https://a.b.com",
+            API_URL=HTTP_ADAPTER.validate_python("https://my.host"),
             USAGE_HISTORY_DAYS=10,
             USAGE_HISTORY_DAYS_OFFSET=1,
             LOG_LEVEL="WARNING",
@@ -219,7 +222,7 @@ class TestSettings(TestCase):
 
         settings = utils.settings.Settings(
             PRIVATE_KEY=private_key_str,
-            API_URL="https://a.b.com",
+            API_URL=HTTP_ADAPTER.validate_python("https://my.host"),
             BILLING_ACCOUNT_ID="12345",
             _env_file=None,
         )
@@ -235,7 +238,7 @@ class TestSettings(TestCase):
             ValueError, 'Expected key to end with "-----END OPENSSH PRIVATE KEY-----".'
         ):
             utils.settings.Settings(
-                API_URL="https://a.b.com",
+                API_URL=HTTP_ADAPTER.validate_python("https://my.host"),
                 PRIVATE_KEY="-----BEGIN OPENSSH PRIVATE KEY-----",
                 _env_file=None,
             )
@@ -245,7 +248,7 @@ class TestSettings(TestCase):
             'Expected key to start with "-----BEGIN OPENSSH PRIVATE KEY-----".',
         ):
             utils.settings.Settings(
-                API_URL="https://a.b.com",
+                API_URL=HTTP_ADAPTER.validate_python("https://my.host"),
                 PRIVATE_KEY="-----END OPENSSH PRIVATE KEY-----",
                 _env_file=None,
             )
@@ -256,7 +259,7 @@ class TestSettings(TestCase):
         ):
             utils.settings.Settings(
                 PRIVATE_KEY=self.private_key_str,
-                API_URL="https://a.b.com",
+                API_URL=HTTP_ADAPTER.validate_python("https://my.host"),
                 MGMT_GROUP="x",
                 BILLING_ACCOUNT_ID="y",
                 _env_file=None,
@@ -268,7 +271,7 @@ class TestSettings(TestCase):
         ):
             utils.settings.Settings(
                 PRIVATE_KEY=self.private_key_str,
-                API_URL="https://a.b.com",
+                API_URL=HTTP_ADAPTER.validate_python("https://my.host"),
                 _env_file=None,
             )
 
