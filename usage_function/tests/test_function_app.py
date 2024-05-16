@@ -1,5 +1,5 @@
 """Tests for Azure functions."""
-from datetime import datetime, timedelta, date
+from datetime import date, datetime, timedelta
 from typing import Final
 from unittest import TestCase, main
 from unittest.mock import MagicMock, call, patch
@@ -281,7 +281,7 @@ class TestCostManagement(TestCase):
                 ),
             ]
         )
-        expected_json = local_usage.json()
+        expected_json = local_usage.model_dump_json()
 
         with patch("costmanagement.BearerAuth") as mock_auth:
             with patch("requests.post") as mock_post:
