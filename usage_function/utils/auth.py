@@ -32,11 +32,9 @@ class BearerAuth(requests.auth.AuthBase):
 
     def create_access_token(self):
         """Create an access token."""
-        token_claims = {"sub": "usage-app"}
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-
         expire = datetime.utcnow() + access_token_expires
-        token_claims.update({"exp": str(expire)})
+        token_claims = {"sub": "usage-app", "exp": expire}
 
         return jwt.encode(token_claims, self.private_key, algorithm="RS256")  # type: ignore
 
