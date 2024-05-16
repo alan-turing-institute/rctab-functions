@@ -5,7 +5,15 @@ from unittest import TestCase, main
 from unittest.mock import MagicMock, call, patch
 from uuid import UUID
 
-from azure.mgmt.costmanagement.models import QueryDefinition
+from azure.mgmt.costmanagement.models import (
+    QueryDefinition,
+    QueryTimePeriod,
+    ExportType,
+    TimeframeType,
+    QueryDataset,
+    QueryGrouping,
+    QueryAggregation,
+)
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from pydantic import HttpUrl, TypeAdapter
@@ -34,7 +42,7 @@ class TestUsage(TestCase):
                 ) as mock_retrieve_and_send_usage:
                     with patch("utils.settings.get_settings") as mock_get_settings:
                         mock_get_settings.return_value = utils.settings.Settings(
-                            API_URL="https://my.host",
+                            API_URL=HTTP_ADAPTER.validate_python("https://my.host"),
                             PRIVATE_KEY="-----BEGIN OPENSSH "
                             "PRIVATE KEY-----"
                             "abcde"
@@ -102,7 +110,7 @@ class TestMonthlyUsage(TestCase):
 
         settings = utils.settings.Settings(
             PRIVATE_KEY=private_key_str,
-            API_URL="https://a.b.com",
+            API_URL=HTTP_ADAPTER.validate_python("https://my.host"),
             BILLING_ACCOUNT_ID="88111111",
             _env_file=None,
         )
@@ -141,7 +149,7 @@ class TestCostManagement(TestCase):
             mock_get_all_usage.return_value = ["sub1", "sub2"]
             mock_datetime.now.return_value = now
             mock_get_settings.return_value = utils.settings.Settings(
-                API_URL="https://my.host",
+                API_URL=HTTP_ADAPTER.validate_python("https://my.host"),
                 PRIVATE_KEY="-----BEGIN OPENSSH PRIVATE KEY-----"
                 "abcde"
                 "-----END OPENSSH PRIVATE KEY-----",
@@ -214,33 +222,45 @@ class TestCostManagement(TestCase):
             mock_consumption_client.assert_called_once_with(
                 credential=costmanagement.CREDENTIALS,
             )
-            query_template = {
-                "type": "ActualCost",
-                "timeframe": "Custom",
-                "dataset": {
-                    "granularity": "None",
-                    "aggregation": {
-                        "totalCost": {"name": "Cost", "function": "Sum"},
-                    },
-                    "grouping": [
-                        {"type": "Dimension", "name": "SubscriptionId"},
-                        {"type": "Dimension", "name": "SubscriptionName"},
-                    ],
+            query_type = ExportType.ACTUAL_COST
+            query_timeframe = TimeframeType.CUSTOM
+            query_dataset = QueryDataset(
+                granularity=None,
+                grouping=[
+                    QueryGrouping(
+                        type="Dimension",
+                        name="SubscriptionId",
+                    ),
+                    QueryGrouping(
+                        type="Dimension",
+                        name="SubscriptionName",
+                    ),
+                ],
+                aggregation={
+                    "totalCost": QueryAggregation(
+                        name="Cost",
+                        function="Sum",
+                    )
                 },
-            }
+            )
+
             parameters1 = QueryDefinition(
-                time_period={
-                    "from_property": start_datetime,
-                    "to": start_datetime + timedelta(364),
-                },
-                **query_template,
+                time_period=QueryTimePeriod(
+                    from_property=start_datetime,
+                    to=start_datetime + timedelta(364),
+                ),
+                dataset=query_dataset,
+                type=query_type,
+                timeframe=query_timeframe,
             )
             parameters2 = QueryDefinition(
-                time_period={
-                    "from_property": start_datetime + timedelta(365),
-                    "to": end_datetime,
-                },
-                **query_template,
+                time_period=QueryTimePeriod(
+                    from_property=start_datetime + timedelta(364),
+                    to=end_datetime,
+                ),
+                dataset=query_dataset,
+                type=query_type,
+                timeframe=query_timeframe,
             )
             scope = "/providers/Microsoft.Management/managementGroups/ea"
             mock_list_func.assert_has_calls(
