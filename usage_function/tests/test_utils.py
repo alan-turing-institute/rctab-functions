@@ -18,7 +18,7 @@ HTTP_ADAPTER: Final = TypeAdapter(HttpUrl)
 class TestUsage(TestCase):
     """Tests for the utils.usage module."""
 
-    def test_get_all_usage(self):
+    def test_get_all_usage(self) -> None:
         # Mock usage data, for when we patch usage_details.list
         expected = [1, 2]
 
@@ -48,7 +48,7 @@ class TestUsage(TestCase):
 
         self.assertListEqual(expected, actual)
 
-    def test_retrieve_and_send_usage(self):
+    def test_retrieve_and_send_usage(self) -> None:
         usage_dict = {
             "additional_properties": {},
             "id": "some-id",
@@ -168,7 +168,7 @@ class TestUsage(TestCase):
                         timeout=60,
                     )
 
-    def test_date_range(self):
+    def test_date_range(self) -> None:
         start = datetime(year=2021, month=11, day=1, hour=2)
         end = datetime(year=2021, month=11, day=2, hour=2)
 
@@ -193,7 +193,7 @@ class TestSettings(TestCase):
         encryption_algorithm=serialization.NoEncryption(),
     ).decode("utf-8")
 
-    def test_valid_settings(self):
+    def test_valid_settings(self) -> None:
         """Check that we can make a Settings instance, given the right arguments."""
 
         utils.settings.Settings(
@@ -206,7 +206,7 @@ class TestSettings(TestCase):
             _env_file=None,
         )
 
-    def test_default_settings(self):
+    def test_default_settings(self) -> None:
         private_key = rsa.generate_private_key(
             public_exponent=65537,
             key_size=2048,
@@ -230,7 +230,7 @@ class TestSettings(TestCase):
         self.assertIsNone(settings.CM_MGMT_GROUP)
         self.assertIsNone(settings.MGMT_GROUP)
 
-    def test_key_validation(self):
+    def test_key_validation(self) -> None:
         with self.assertRaisesRegex(
             ValueError, 'Expected key to end with "-----END OPENSSH PRIVATE KEY-----".'
         ):
@@ -274,7 +274,7 @@ class TestSettings(TestCase):
 
 
 class TestLoggingUtils(TestCase):
-    def test_called_twice(self):
+    def test_called_twice(self) -> None:
         """Adding multiple loggers could cause large storage bills."""
         with patch("utils.settings.get_settings") as mock_get_settings:
             mock_get_settings.return_value.CENTRAL_LOGGING_CONNECTION_STRING = "my-str"
