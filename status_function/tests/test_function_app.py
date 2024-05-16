@@ -2,6 +2,7 @@
 import logging
 from datetime import datetime
 from types import SimpleNamespace
+from typing import Final
 from unittest import TestCase, main
 from unittest.mock import MagicMock, call, patch
 from uuid import UUID
@@ -11,9 +12,13 @@ from azure.graphrbac.models import ADGroup, ServicePrincipal, User
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from msrestazure.azure_exceptions import CloudError
+from pydantic import HttpUrl, TypeAdapter
 
 import status
 from status.models import RoleAssignment, SubscriptionState, SubscriptionStatus
+
+HTTP_ADAPTER: Final = TypeAdapter(HttpUrl)
+VALID_URL: Final = HTTP_ADAPTER.validate_python("https://my.org")
 
 EXPECTED_DICT = {
     "role_definition_id": str(UUID(int=10)),
@@ -56,7 +61,10 @@ class TestStatus(TestCase):
                         mock_get_all_status.assert_called_once()
                         mock_send_status.assert_has_calls(
                             [
-                                call("https://my.host", ["status1", "status2"]),
+                                call(
+                                    HTTP_ADAPTER.validate_python("https://my.host"),
+                                    ["status1", "status2"],
+                                ),
                             ]
                         )
 
@@ -79,7 +87,7 @@ class TestStatus(TestCase):
 
         expected_json = status.models.AllSubscriptionStatus(
             status_list=[example_status]
-        ).json()
+        ).model_dump_json()
 
         with patch("status.BearerAuth") as mock_auth:
             with patch("requests.post") as mock_post:
@@ -89,14 +97,11 @@ class TestStatus(TestCase):
                 mock_post.return_value = mock_response
 
                 with patch("status.logger.warning") as mock_warning:
-
-                    def send():
-                        status.send_status("https://123.234.345.456", [example_status])
-
-                    self.assertRaises(RuntimeError, send)
+                    with self.assertRaises(RuntimeError):
+                        status.send_status(VALID_URL, [example_status])
 
                     expected_call = call(
-                        "https://123.234.345.456/accounting/all-status",
+                        "https://my.org/accounting/all-status",
                         expected_json,
                         auth=mock_auth.return_value,
                         timeout=60,
@@ -117,10 +122,10 @@ class TestStatus(TestCase):
                 mock_post.return_value = mock_response
 
                 with patch("logging.warning") as _:
-                    status.send_status("https://123.234.345.456", [example_status])
+                    status.send_status(VALID_URL, [example_status])
 
                     mock_post.assert_called_once_with(
-                        "https://123.234.345.456/accounting/all-status",
+                        "https://my.org/accounting/all-status",
                         expected_json,
                         auth=mock_auth.return_value,
                         timeout=60,
