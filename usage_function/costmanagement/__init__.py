@@ -1,12 +1,21 @@
 """An Azure function to collect cost-management information."""
 import logging
 from datetime import datetime, timedelta
+from typing import Final
 
 import azure.functions as func
 import requests
 from azure.identity import DefaultAzureCredential
 from azure.mgmt.costmanagement import CostManagementClient
-from azure.mgmt.costmanagement.models import QueryDefinition
+from azure.mgmt.costmanagement.models import (
+    QueryDefinition,
+    QueryGrouping,
+    QueryDataset,
+    TimeframeType,
+    ExportType,
+    QueryAggregation,
+    QueryTimePeriod,
+)
 
 import utils.settings
 from utils import models
@@ -18,30 +27,37 @@ logging.basicConfig(
     format="%(levelname)s %(asctime)s: %(name)s - %(message)s",
     datefmt="%d/%m/%Y %I:%M:%S %p",
 )
-logger = logging.getLogger(__name__)
+logger: Final = logging.getLogger(__name__)
 
-RETRY_ATTEMPTS = 5
+RETRY_ATTEMPTS: Final = 5
 # We should only need one set of credentials
-CREDENTIALS = DefaultAzureCredential()
+CREDENTIALS: Final = DefaultAzureCredential()
 
 # The constant parts of the Azure Cost Management API query. To be appended
 # with to/from times.
-QUERY_TEMPLATE = {
-    "type": "ActualCost",
-    "timeframe": "Custom",
-    "dataset": {
-        "granularity": "None",
-        "aggregation": {
-            # TODO What's the difference between Cost and PreTaxCost, and which should
-            # we use?
-            "totalCost": {"name": "Cost", "function": "Sum"},
-        },
-        "grouping": [
-            {"type": "Dimension", "name": "SubscriptionId"},
-            {"type": "Dimension", "name": "SubscriptionName"},
-        ],
+QUERY_TYPE: Final = ExportType.ACTUAL_COST
+QUERY_TIMEFRAME: Final = TimeframeType.CUSTOM
+QUERY_DATASET: Final = QueryDataset(
+    granularity=None,
+    grouping=[
+        QueryGrouping(
+            type="Dimension",
+            name="SubscriptionId",
+        ),
+        QueryGrouping(
+            type="Dimension",
+            name="SubscriptionName",
+        ),
+    ],
+    aggregation={
+        # TODO What's the difference between Cost and PreTaxCost,
+        # and which should we use?
+        "totalCost": QueryAggregation(
+            name="Cost",
+            function="Sum",
+        )
     },
-}
+)
 
 
 def _truncate_date(date_time):
@@ -90,24 +106,28 @@ def get_all_usage(start_datetime: datetime, end_datetime: datetime, mgmt_group: 
         window_start = covered_to + timedelta(days=1)
         window_end = min(window_start + max_timeperiod, end_datetime)
         parameters = QueryDefinition(
-            time_period={"from_property": window_start, "to": window_end},
-            **QUERY_TEMPLATE,
+            time_period=QueryTimePeriod(from_property=window_start, to=window_end),
+            dataset=QUERY_DATASET,
+            type=QUERY_TYPE,
+            timeframe=QUERY_TIMEFRAME,
         )
         new_data = cm_client.query.usage(scope=scope, parameters=parameters)
-        if new_data.next_link:
-            # TODO How to deal with paging?
-            msg = (
-                "Cost management query returned multiple pages of results. "
-                "The function app is not prepared to deal with this."
-            )
-            raise NotImplementedError(msg)
-        for amount, sub_id, name, currency in new_data.rows:
-            key = (sub_id, name, currency)
-            if key in data:
-                data[key] += amount
-            else:
-                data[key] = amount
-        covered_to = window_end
+        if new_data:
+            if new_data.next_link:
+                # TODO How to deal with paging?
+                msg = (
+                    "Cost management query returned multiple pages of results. "
+                    "The function app is not prepared to deal with this."
+                )
+                raise NotImplementedError(msg)
+            if new_data.rows:
+                for amount, sub_id, name, currency in new_data.rows:
+                    key = (sub_id, name, currency)
+                    if key in data:
+                        data[key] += amount
+                    else:
+                        data[key] = amount
+            covered_to = window_end
 
     # Convert data to a list of CMUsage objects.
     all_usage = models.AllCMUsage(

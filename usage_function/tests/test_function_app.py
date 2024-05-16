@@ -6,13 +6,13 @@ from unittest.mock import MagicMock, call, patch
 from uuid import UUID
 
 from azure.mgmt.costmanagement.models import (
-    QueryDefinition,
-    QueryTimePeriod,
     ExportType,
-    TimeframeType,
-    QueryDataset,
-    QueryGrouping,
     QueryAggregation,
+    QueryDataset,
+    QueryDefinition,
+    QueryGrouping,
+    QueryTimePeriod,
+    TimeframeType,
 )
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
