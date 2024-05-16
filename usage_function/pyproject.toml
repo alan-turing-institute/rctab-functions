@@ -23,31 +23,19 @@ azure-mgmt-managementgroups = "^1.0.0"
 azure-mgmt-costmanagement = "^3.0.0"
 opencensus-ext-azure = "^1.1.7"
 
-[tool.poetry.dev-dependencies]
-flake8 = "^3.9.2"
-black = "^21.8b0"
-coverage = "^5.5"
-pre-commit = "^2.15.0"
-pylint = "^2.10.2"
-
 [tool.poetry.group.dev.dependencies]
-isort = "^5.12.0"
-pylint-absolute-imports = "^1.0.1"
-mypy = "^1.8.0"
+flake8 = "^3.9.2"
+black = "^24.4.2"
+coverage = "^7.5.1"
+pre-commit = "^3.7.1"
+pylint = "^3.2.0"
+isort = "^5.13.2"
+pylint-absolute-imports = "^1.1.0"
+mypy = "^1.10.0"
 types-requests = "^2.31.0.20240125"
 
 [tool.black]
 line-width = 88
-
-#[tool.setuptools]
-#py-modules = []
-
-#[tool.setuptools.packages.find]
-#where = ["."]
-#include = ["costmanagement", "usage", "monthly_usage", "utils"]
-#include = ["usage_function"]
-#exclude = []
-#namepsaces = false
 
 [build-system]
 requires = ["poetry-core"]
