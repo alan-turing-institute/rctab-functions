@@ -21,7 +21,7 @@ HTTP_ADAPTER: Final = TypeAdapter(HttpUrl)
 class TestUsage(TestCase):
     """Tests for the usage/__init__.py file."""
 
-    def test_main(self):
+    def test_main(self) -> None:
         with patch("usage.get_all_usage") as mock_get_all_usage:
             mock_get_all_usage.return_value = ["usage1", "usage2"]
 
@@ -86,7 +86,7 @@ class TestUsage(TestCase):
 class TestMonthlyUsage(TestCase):
     """Tests for the monthly_usage/__init__.py file."""
 
-    def test_main(self):
+    def test_main(self) -> None:
         mock_timer = MagicMock()
         mock_timer.past_due = True
 
@@ -126,7 +126,7 @@ class TestMonthlyUsage(TestCase):
 class TestCostManagement(TestCase):
     """Tests for the costmanagement/__init__.py file."""
 
-    def test_main(self):
+    def test_main(self) -> None:
         """Call costmanagement.main, with mock versions of all the functions that it
         calls. Check that each gets called with expected arguments.
         """
@@ -171,7 +171,7 @@ class TestCostManagement(TestCase):
                 ["sub1", "sub2"],
             )
 
-    def test_get_all_usage(self):
+    def test_get_all_usage(self) -> None:
         """Call costmanagement.get_all_usage while mocking the Azure API, check that the
         API gets called as expected.
         """
@@ -253,7 +253,7 @@ class TestCostManagement(TestCase):
 
         self.assertEqual(expected_total, actual_total)
 
-    def test_send_usage(self):
+    def test_send_usage(self) -> None:
         """Call costmanagement.send_usage, while mocking the RCTab POST end point.
         Check that both an error response and a success response are processed
         correctly.
