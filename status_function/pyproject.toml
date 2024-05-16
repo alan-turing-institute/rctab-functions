@@ -9,15 +9,16 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^3.10"
-pydantic = {extras = ["dotenv"], version = "^1.8.2"}
-azure-functions = "^1.7.2"
-azure-mgmt-subscription = "^1.0.0"
-azure-identity = "^1.6.1"
-PyJWT = {extras = ["crypto"], version = "^2.1.0"}
-requests = "^2.26.0"
-azure-mgmt-authorization = "^2.0.0"
+azure-functions = "^1.19.0"
 azure-graphrbac = "^0.61.1"
-opencensus-ext-azure = "^1.1.7"
+azure-identity = "^1.16.0"
+azure-mgmt-authorization = "^4.0.0"
+azure-mgmt-subscription = "^3.1.1"
+opencensus-ext-azure = "^1.1.13"
+pydantic = "^2.7.1"
+pydantic-settings = "^2.2.1"
+PyJWT = {extras = ["crypto"], version = "^2.8.0"}
+requests = "^2.31.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "^24.4.2"
