@@ -1,6 +1,6 @@
 """Tests for Azure functions."""
 from datetime import date, datetime, timedelta
-from typing import Final, Union
+from typing import Final
 from unittest import TestCase, main
 from unittest.mock import MagicMock, call, patch
 from uuid import UUID
@@ -137,7 +137,6 @@ class TestMonthlyUsage(TestCase):
 
     def test_get_date_range(self):
         """Test that the get_date_range function returns the expected dates."""
-        expected_dates: Union[tuple, tuple[(date, ...)]] = tuple()
 
         with patch("monthly_usage.datetime") as mock_datetime:
             # On hour 0 of the 7th day, we expect to get dates 1 and 2.
@@ -163,11 +162,9 @@ class TestMonthlyUsage(TestCase):
             # Some hours of the 8th day don't map to valid dates.
             mock_datetime.now.return_value = datetime(2024, 2, 8, 22, 0, 0)
 
-            expected_dates = tuple()
-
             actual_dates = monthly_usage.get_dates()
 
-            self.assertTupleEqual(expected_dates, actual_dates)
+            self.assertIsNone(actual_dates)
 
         with patch("monthly_usage.datetime") as mock_datetime:
             # For leap year February, we only expect one final date.
@@ -186,7 +183,7 @@ class TestMonthlyUsage(TestCase):
             expected_dates = (date(2024, 1, 31),)
 
             actual_dates = monthly_usage.get_dates()
-
+            self.assertIsNotNone(actual_dates)
             self.assertTupleEqual(expected_dates, actual_dates)
 
 

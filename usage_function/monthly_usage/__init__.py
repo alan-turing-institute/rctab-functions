@@ -14,7 +14,7 @@ from utils.usage import get_all_usage, retrieve_usage, send_usage
 MAX_ATTEMPTS = 5
 
 
-def get_dates() -> Union[Tuple, Tuple[date], Tuple[date, date]]:
+def get_dates() -> Union[None, Tuple[date], Tuple[date, date]]:
     """Get up to two dates to process.
 
     Assuming we are called bi-hourly on the 7th and 8th of the month,
@@ -32,7 +32,7 @@ def get_dates() -> Union[Tuple, Tuple[date], Tuple[date, date]]:
             year=end_of_last_month.year, month=end_of_last_month.month, day=day_of_month
         )
     except ValueError:
-        return tuple()
+        return None
 
     try:
         day2 = date(
@@ -79,9 +79,9 @@ def main(mytimer: func.TimerRequest) -> None:
 
         date_from = datetime(dates[0].year, dates[0].month, dates[0].day)
         date_to = (
-            date_from
-            if len(dates) == 1
-            else datetime(dates[1].year, dates[1].month, dates[1].day)
+            datetime(dates[1].year, dates[1].month, dates[1].day)
+            if len(dates) == 2
+            else date_from
         )
         usage_query = get_all_usage(
             date_from,
