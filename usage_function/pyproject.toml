@@ -12,27 +12,28 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^3.10"
-azure-mgmt-consumption = "^8.0.0"
-pydantic = {extras = ["dotenv"], version = "^1.8.2"}
-azure-functions = "^1.7.2"
-azure-mgmt-subscription = "^1.0.0"
-azure-identity = "^1.6.1"
-PyJWT = {extras = ["crypto"], version = "^2.1.0"}
-requests = "^2.26.0"
+azure-functions = "^1.19.0"
+azure-identity = "^1.16.0"
+azure-mgmt-consumption = "^10.0.0"
+azure-mgmt-costmanagement = "^4.0.1"
 azure-mgmt-managementgroups = "^1.0.0"
-azure-mgmt-costmanagement = "^3.0.0"
-opencensus-ext-azure = "^1.1.7"
+azure-mgmt-subscription = "^3.1.1"
+opencensus-ext-azure = "^1.1.13"
+pydantic = "^2.7.1"
+pydantic-settings = "^2.2.1"
+PyJWT = {extras = ["crypto"], version = "^2.8.0"}
+requests = "^2.31.0"
 
 [tool.poetry.group.dev.dependencies]
-flake8 = "^3.9.2"
 black = "^24.4.2"
 coverage = "^7.5.1"
+flake8 = "^3.9.2"
+isort = "^5.13.2"
+mypy = "^1.10.0"
 pre-commit = "^3.7.1"
 pylint = "^3.2.0"
-isort = "^5.13.2"
 pylint-absolute-imports = "^1.1.0"
-mypy = "^1.10.0"
-types-requests = "^2.31.0.20240125"
+types-requests = "^2.31.0.20240406"  # Should match requests version
 
 [tool.black]
 line-width = 88

@@ -18,7 +18,7 @@ from utils.usage import retrieve_usage
 class DummyAzureUsage:
     def __init__(self):
         # pylint: disable=invalid-name
-        self.id = 1
+        self.id = "some-usage-id"
         # pylint: enable=invalid-name
         self.subscription_id = str(UUID(int=0))
         self.date = date.today()
@@ -197,7 +197,7 @@ class TestUsageUtils(TestCase):
 
         actual = retrieve_usage((datum_1, datum_2))
         expected = Usage(
-            id="1",
+            id="some-usage-id",
             subscription_id=UUID(int=0),
             quantity=2,
             cost=2,
@@ -232,7 +232,7 @@ class TestUsageUtils(TestCase):
         actual = retrieve_usage((datum_1, datum_2))
         expected = Usage(
             reservation_id="x",
-            id="1",
+            id="some-usage-id",
             subscription_id=UUID(int=0),
             quantity=2,
             cost=0,

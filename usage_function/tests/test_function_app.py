@@ -1,5 +1,6 @@
 """Tests for Azure functions."""
 from datetime import date, datetime, timedelta
+from typing import Final
 from unittest import TestCase, main
 from unittest.mock import MagicMock, call, patch
 from uuid import UUID
@@ -7,13 +8,14 @@ from uuid import UUID
 from azure.mgmt.costmanagement.models import QueryDefinition
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
-from pydantic import HttpUrl
-from pydantic.tools import parse_obj_as
+from pydantic import HttpUrl, TypeAdapter
 
 import costmanagement
 import monthly_usage
 import usage
 import utils
+
+HTTP_ADAPTER: Final = TypeAdapter(HttpUrl)
 
 
 class TestUsage(TestCase):
@@ -74,7 +76,7 @@ class TestUsage(TestCase):
                         mock_retrieve_and_send_usage.assert_has_calls(
                             [
                                 call(
-                                    parse_obj_as(HttpUrl, "https://my.host"),
+                                    HTTP_ADAPTER.validate_python("https://my.host"),
                                     ["usage1", "usage2"],
                                 ),
                             ]
@@ -221,7 +223,7 @@ class TestCostManagement(TestCase):
                 "my-mgmt-group",
             )
             mock_send_usage.assert_called_once_with(
-                parse_obj_as(HttpUrl, "https://my.host"),
+                HTTP_ADAPTER.validate_python("https://my.host"),
                 ["sub1", "sub2"],
             )
 
@@ -312,8 +314,8 @@ class TestCostManagement(TestCase):
         Check that both an error response and a success response are processed
         correctly.
         """
-        end_datetime = datetime.now()
-        start_datetime = end_datetime - timedelta(364)
+        end_datetime = date.today()
+        start_datetime = end_datetime - timedelta(days=364)
         # Example usage in the final, processed format
         local_usage = costmanagement.models.AllCMUsage(
             cm_usage_list=[
