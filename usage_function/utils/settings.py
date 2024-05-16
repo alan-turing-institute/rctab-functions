@@ -2,7 +2,9 @@
 from functools import lru_cache
 from typing import Optional
 
-from pydantic import BaseSettings, HttpUrl, validator
+from pydantic import HttpUrl, field_validator, model_validator
+from pydantic_settings import BaseSettings
+from typing_extensions import Self
 
 
 class Settings(BaseSettings):
@@ -13,10 +15,12 @@ class Settings(BaseSettings):
     USAGE_HISTORY_DAYS: int = 3  # The number of days' history to collect...
     USAGE_HISTORY_DAYS_OFFSET: int = 0  # ...starting from this many days ago
     LOG_LEVEL: str = "WARNING"  # The log level
-    CM_MGMT_GROUP: Optional[str]  # The cost management function mgmt group
-    MGMT_GROUP: Optional[str]  # Either, the usage function mgmt group...
-    BILLING_ACCOUNT_ID: Optional[str]  # ...or the usage function billing account ID
-    CENTRAL_LOGGING_CONNECTION_STRING: Optional[str]
+    CM_MGMT_GROUP: Optional[str] = None  # The cost management function mgmt group
+    MGMT_GROUP: Optional[str] = None  # Either, the usage function mgmt group...
+    BILLING_ACCOUNT_ID: Optional[
+        str
+    ] = None  # ...or the usage function billing account ID
+    CENTRAL_LOGGING_CONNECTION_STRING: Optional[str] = None
 
     class Config:
         """Settings for the settings class itself."""
@@ -24,8 +28,8 @@ class Settings(BaseSettings):
         env_file = ".env"
         env_file_encoding = "utf-8"
 
-    @validator("PRIVATE_KEY")
-    def correct_start_and_end(cls, v):  # pylint: disable=no-self-argument
+    @field_validator("PRIVATE_KEY")
+    def correct_start_and_end(cls, v: str) -> str:  # pylint: disable=no-self-argument
         """Validate the private key.
 
         Args:
@@ -44,21 +48,19 @@ class Settings(BaseSettings):
             )
         return v
 
-    @validator("MGMT_GROUP", "BILLING_ACCOUNT_ID")
-    def mgmt_group_or_billing_id(
-        cls, value, values
-    ):  # pylint: disable=no-self-argument
+    @model_validator(mode="after")
+    def mgmt_group_or_billing_id(self) -> Self:
         """Require either a mgmt group name or a billing account ID."""
-        # Assume we don't know which order things are validated in
-        if "BILLING_ACCOUNT_ID" in values.keys() or "MGMT_GROUP" in values.keys():
-            previous_value = values.get("BILLING_ACCOUNT_ID", values.get("MGMT_GROUP"))
+        if (
+            not self.MGMT_GROUP
+            and not self.BILLING_ACCOUNT_ID
+            or (self.MGMT_GROUP and self.BILLING_ACCOUNT_ID)
+        ):
+            raise ValueError(
+                "Exactly one of MGMT_GROUP and BILLING_ACCOUNT_ID should be empty."
+            )
 
-            if (previous_value and value) or (not previous_value and not value):
-                raise ValueError(
-                    "Exactly one of MGMT_GROUP and BILLING_ACCOUNT_ID should be empty."
-                )
-
-        return value
+        return self
 
 
 @lru_cache()
