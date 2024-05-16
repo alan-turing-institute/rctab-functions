@@ -2,7 +2,9 @@
 from functools import lru_cache
 from typing import Optional
 
-from pydantic import BaseSettings, HttpUrl, validator
+from pydantic import HttpUrl, field_validator, model_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from typing_extensions import Self
 
 
 class Settings(BaseSettings):
@@ -13,14 +15,11 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "WARNING"
     CENTRAL_LOGGING_CONNECTION_STRING: Optional[str]
 
-    class Config:
-        """Meta-settings for the Settings class."""
+    # Settings for the settings class itself.
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-
-    @validator("PRIVATE_KEY")
-    def correct_start_and_end(cls, v):  # pylint: disable=no-self-argument
+    @field_validator("PRIVATE_KEY")
+    def correct_start_and_end(cls, v: str) -> str:  # pylint: disable=no-self-argument
         """Validate a private key."""
         if not v.startswith("-----BEGIN OPENSSH PRIVATE KEY-----"):
             raise ValueError(
