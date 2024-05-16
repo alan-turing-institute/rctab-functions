@@ -6,7 +6,6 @@ Attributes:
         value is 5.
 """
 from datetime import datetime, timedelta
-from typing import Any
 
 import jwt
 import requests
@@ -54,12 +53,9 @@ class BearerAuth(requests.auth.AuthBase):
         Returns:
             The access token.
         """
-        token_claims: dict[str, Any] = {"sub": "status-app"}
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-
         expire = datetime.utcnow() + access_token_expires
-        token_claims.update({"exp": expire})
-
+        token_claims = {"sub": "status-app", "exp": expire}
         return jwt.encode(token_claims, self.private_key, algorithm=ALGORITHM)
 
     def __call__(self, r: requests.PreparedRequest) -> requests.PreparedRequest:
