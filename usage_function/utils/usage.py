@@ -129,13 +129,9 @@ def retrieve_usage(usage_data) -> list[models.Usage]:
         else:
             usage_item.amortised_cost = 0.0
 
-        if usage_item.id in all_items:
-            existing_item = all_items[usage_item.id]
+        if existing_item := all_items.get(usage_item.id):
             # Add to the existing item
             combine_items(existing_item, usage_item)
-
-            # Update the dict entry
-            all_items[usage_item.id] = existing_item
 
         else:
             all_items[usage_item.id] = usage_item
@@ -148,7 +144,7 @@ def retrieve_usage(usage_data) -> list[models.Usage]:
         datetime.now() - started_processing_at,
     )
 
-    return list(all_items.values())
+    return all_item_list
 
 
 def retrieve_and_send_usage(hostname_or_ip, usage_data):
