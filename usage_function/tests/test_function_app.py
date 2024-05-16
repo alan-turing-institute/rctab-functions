@@ -255,7 +255,7 @@ class TestCostManagement(TestCase):
             )
             parameters2 = QueryDefinition(
                 time_period=QueryTimePeriod(
-                    from_property=start_datetime + timedelta(364),
+                    from_property=start_datetime + timedelta(365),
                     to=end_datetime,
                 ),
                 dataset=query_dataset,
@@ -263,11 +263,15 @@ class TestCostManagement(TestCase):
                 timeframe=query_timeframe,
             )
             scope = "/providers/Microsoft.Management/managementGroups/ea"
-            mock_list_func.assert_has_calls(
-                [
-                    call(scope=scope, parameters=parameters1),
-                    call(scope=scope, parameters=parameters2),
-                ]
+            self.assertEqual(mock_list_func.call_args_list[0].kwargs["scope"], scope)
+            self.assertEqual(
+                mock_list_func.call_args_list[0].kwargs["parameters"].serialize(),
+                parameters1.serialize(),
+            )
+            self.assertEqual(mock_list_func.call_args_list[1].kwargs["scope"], scope)
+            self.assertEqual(
+                mock_list_func.call_args_list[1].kwargs["parameters"].serialize(),
+                parameters2.serialize(),
             )
             self.assertEqual(mock_list_func.call_count, 2)
 

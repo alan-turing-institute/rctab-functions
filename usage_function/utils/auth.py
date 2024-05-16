@@ -1,4 +1,5 @@
 """Authentication between usage package and API web app."""
+
 from datetime import datetime, timedelta
 
 import jwt
@@ -36,7 +37,9 @@ class BearerAuth(requests.auth.AuthBase):
         expire = datetime.utcnow() + access_token_expires
         token_claims = {"sub": "usage-app", "exp": expire}
 
-        return jwt.encode(token_claims, self.private_key, algorithm="RS256")  # type: ignore
+        return jwt.encode(
+            token_claims, self.private_key, algorithm="RS256"  # type: ignore
+        )
 
     def __call__(self, r: requests.PreparedRequest) -> requests.PreparedRequest:
         """Add the bearer token to the request."""

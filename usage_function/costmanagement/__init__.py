@@ -8,13 +8,13 @@ import requests
 from azure.identity import DefaultAzureCredential
 from azure.mgmt.costmanagement import CostManagementClient
 from azure.mgmt.costmanagement.models import (
-    QueryDefinition,
-    QueryGrouping,
-    QueryDataset,
-    TimeframeType,
     ExportType,
     QueryAggregation,
+    QueryDataset,
+    QueryDefinition,
+    QueryGrouping,
     QueryTimePeriod,
+    TimeframeType,
 )
 
 import utils.settings
@@ -27,7 +27,7 @@ logging.basicConfig(
     format="%(levelname)s %(asctime)s: %(name)s - %(message)s",
     datefmt="%d/%m/%Y %I:%M:%S %p",
 )
-logger: Final = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 RETRY_ATTEMPTS: Final = 5
 # We should only need one set of credentials
