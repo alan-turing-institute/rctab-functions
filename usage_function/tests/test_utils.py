@@ -1,14 +1,18 @@
 """Tests for function app utils."""
 import logging
 from datetime import datetime, timedelta
+from typing import Final
 from unittest import TestCase, main
 from unittest.mock import MagicMock, call, patch
 from uuid import UUID
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
+from pydantic import HttpUrl, TypeAdapter
 
 import utils
+
+HTTP_ADAPTER: Final = TypeAdapter(HttpUrl)
 
 
 class TestUsage(TestCase):
@@ -113,13 +117,11 @@ class TestUsage(TestCase):
                 mock_post.return_value = mock_response
 
                 with patch("utils.usage.logging.warning") as mock_log:
-
-                    def send():
+                    with self.assertRaises(RuntimeError):
                         utils.usage.retrieve_and_send_usage(
-                            "https://123.234.345.456", [example_usage_detail]
+                            HTTP_ADAPTER.validate_python("https://123.123.123.123"),
+                            [example_usage_detail],
                         )
-
-                    self.assertRaises(RuntimeError, send)
 
                     usage = utils.usage.models.Usage(**usage_dict)
 
@@ -128,7 +130,7 @@ class TestUsage(TestCase):
                     ).model_dump_json()
 
                     expected_call = call(
-                        "https://123.234.345.456/accounting/all-usage",
+                        "https://123.123.123.123/accounting/all-usage",
                         expected_json,
                         auth=mock_auth.return_value,
                         timeout=60,
@@ -149,7 +151,8 @@ class TestUsage(TestCase):
 
                 with patch("usage.logging.warning"):
                     utils.usage.retrieve_and_send_usage(
-                        "https://123.234.345.456", [example_usage_detail]
+                        HTTP_ADAPTER.validate_python("https://123.123.123.123"),
+                        [example_usage_detail],
                     )
 
                     usage = utils.usage.models.Usage(**usage_dict)
@@ -159,7 +162,7 @@ class TestUsage(TestCase):
                     ).model_dump_json()
 
                     mock_post.assert_called_once_with(
-                        "https://123.234.345.456/accounting/all-usage",
+                        "https://123.123.123.123/accounting/all-usage",
                         expected_json,
                         auth=mock_auth.return_value,
                         timeout=60,
