@@ -93,8 +93,9 @@ def main(mytimer: func.TimerRequest) -> None:
         try:
             usage_items = retrieve_usage(usage_query)
 
+            today = date.today()
             for usage_item in usage_items:
-                usage_item.monthly_upload = datetime.now()
+                usage_item.monthly_upload = today
 
             logger.warning("Sending usage for %s", dates)
             send_usage(config.API_URL, usage_items, monthly_usage_upload=True)
