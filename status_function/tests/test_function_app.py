@@ -406,7 +406,6 @@ class TestStatus(TestCase):
                                         display_name="Joe Bloggs",
                                         mail="jbloggs@mail.ac.uk",
                                         scope="/",
-                                        principal_type=User,
                                     )
                                 ],
                             )
@@ -455,7 +454,6 @@ class TestStatus(TestCase):
                                         display_name="Some Service",
                                         mail=None,
                                         scope="/",
-                                        principal_type=ServicePrincipal,
                                     )
                                 ],
                             )
@@ -483,7 +481,6 @@ class TestStatus(TestCase):
                                         display_name="Unknown",
                                         scope="/",
                                         mail=None,
-                                        principal_type=SimpleNamespace,
                                     )
                                 ],
                             )
