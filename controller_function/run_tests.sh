@@ -25,7 +25,7 @@ status=$((status+$?))
 echo "Running pylint..."
 # shellcheck disable=SC2038
 find . -type f -name "*.py" ! \( -path "./.venv/*" \) |
-    xargs pylint --init-hook='import sys; sys.setrecursionlimit(2000)' --rcfile=tests/pylintrc
+    xargs pylint --rcfile=tests/pylintrc
 status=$((status+$?))
 
 # Run our unit tests with code coverage

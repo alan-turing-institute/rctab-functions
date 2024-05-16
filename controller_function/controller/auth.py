@@ -1,4 +1,5 @@
 """Authentication between status package and API web app."""
+
 from datetime import datetime, timedelta
 
 import jwt
@@ -32,13 +33,13 @@ class BearerAuth(requests.auth.AuthBase):
 
     def create_access_token(self):
         """Create an access token."""
-        token_claims = {"sub": "controller-app"}
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-
         expire = datetime.utcnow() + access_token_expires
-        token_claims.update({"exp": expire})
+        token_claims = {"sub": "controller-app", "exp": expire}
 
-        return jwt.encode(token_claims, self.private_key, algorithm=ALGORITHM)
+        return jwt.encode(
+            token_claims, self.private_key, algorithm=ALGORITHM  # type: ignore
+        )
 
     def __call__(self, r: requests.PreparedRequest) -> requests.PreparedRequest:
         """Attach Authorization Header to a request."""
