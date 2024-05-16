@@ -2,8 +2,8 @@
 from functools import lru_cache
 from typing import Optional
 
-from pydantic import ConfigDict, HttpUrl, field_validator, model_validator
-from pydantic_settings import BaseSettings
+from pydantic import HttpUrl, field_validator, model_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing_extensions import Self
 
 
@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     CENTRAL_LOGGING_CONNECTION_STRING: Optional[str] = None
 
     # Settings for the settings class itself.
-    model_config = ConfigDict(_env_file=".env", _env_file_encoding="utf-8")
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
     @field_validator("PRIVATE_KEY")
     def correct_start_and_end(cls, v: str) -> str:  # pylint: disable=no-self-argument
