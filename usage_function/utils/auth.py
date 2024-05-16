@@ -36,9 +36,9 @@ class BearerAuth(requests.auth.AuthBase):
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
 
         expire = datetime.utcnow() + access_token_expires
-        token_claims.update({"exp": expire})
+        token_claims.update({"exp": str(expire)})
 
-        return jwt.encode(token_claims, self.private_key, algorithm="RS256")
+        return jwt.encode(token_claims, self.private_key, algorithm="RS256")  # type: ignore
 
     def __call__(self, r: requests.PreparedRequest) -> requests.PreparedRequest:
         """Add the bearer token to the request."""

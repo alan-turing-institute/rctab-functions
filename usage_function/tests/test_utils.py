@@ -1,6 +1,6 @@
 """Tests for function app utils."""
 import logging
-from datetime import datetime, timedelta, date
+from datetime import date, datetime, timedelta
 from typing import Final
 from unittest import TestCase, main
 from unittest.mock import MagicMock, call, patch
@@ -10,10 +10,10 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from pydantic import HttpUrl, TypeAdapter
 
-import utils.usage
-import utils.models
 import utils.logutils
+import utils.models
 import utils.settings
+import utils.usage
 
 HTTP_ADAPTER: Final = TypeAdapter(HttpUrl)
 
