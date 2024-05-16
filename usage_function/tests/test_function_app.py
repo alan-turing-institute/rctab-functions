@@ -152,11 +152,9 @@ class TestMonthlyUsage(TestCase):
             # Some hours of the 8th day don't map to valid dates.
             mock_datetime.now.return_value = datetime(2024, 2, 8, 22, 0, 0)
 
-            expected_dates = tuple()
-
             actual_dates = monthly_usage.get_dates()
 
-            self.assertTupleEqual(expected_dates, actual_dates)
+            self.assertIsNone(actual_dates)
 
         with patch("monthly_usage.datetime") as mock_datetime:
             # For leap year February, we only expect one final date.
