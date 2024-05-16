@@ -1,6 +1,6 @@
 """Tests for function app utils."""
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from typing import Final
 from unittest import TestCase, main
 from unittest.mock import MagicMock, call, patch
@@ -181,6 +181,35 @@ class TestUsage(TestCase):
             datetime(year=2021, month=11, day=2),
         ]
         self.assertListEqual(expected, actual)
+
+    def test_combine_items(self) -> None:
+        """Test that combine_items works as expected."""
+        existing_item = utils.models.Usage(
+            id="someid",
+            date=date.today(),
+            cost=1,
+            subscription_id=UUID(int=0),
+        )
+        new_item = utils.models.Usage(
+            id="someid",
+            date=date.today(),
+            cost=1,
+            subscription_id=UUID(int=0),
+        )
+
+        utils.usage.combine_items(existing_item, new_item)
+        expected = utils.models.Usage(
+            id="someid",
+            date=date.today(),
+            quantity=0,
+            effective_price=0,
+            cost=2,
+            amortised_cost=0,
+            total_cost=0,
+            unit_price=0,
+            subscription_id=UUID(int=0),
+        )
+        self.assertEqual(expected, existing_item)
 
 
 class TestSettings(TestCase):

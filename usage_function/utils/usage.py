@@ -77,7 +77,28 @@ def get_all_usage(
     return data
 
 
-def retrieve_usage(usage_data):
+def combine_items(item_to_update: models.Usage, other_item: models.Usage) -> None:
+    """Update one Usage with the cost, etc. of another Usage."""
+    item_to_update.quantity = (item_to_update.quantity or 0) + (
+        other_item.quantity or 0
+    )
+    item_to_update.effective_price = (item_to_update.effective_price or 0) + (
+        other_item.effective_price or 0
+    )
+    item_to_update.amortised_cost = (item_to_update.amortised_cost or 0) + (
+        other_item.amortised_cost or 0
+    )
+    item_to_update.total_cost = (item_to_update.total_cost or 0) + (
+        other_item.total_cost or 0
+    )
+    item_to_update.unit_price = (item_to_update.unit_price or 0) + (
+        other_item.unit_price or 0
+    )
+
+    item_to_update.cost += other_item.cost
+
+
+def retrieve_usage(usage_data) -> list[models.Usage]:
     """Retrieve usage data from Azure.
 
     Args:
@@ -111,12 +132,7 @@ def retrieve_usage(usage_data):
         if usage_item.id in all_items:
             existing_item = all_items[usage_item.id]
             # Add to the existing item
-            existing_item.quantity += usage_item.quantity
-            existing_item.effective_price += usage_item.effective_price
-            existing_item.cost += usage_item.cost
-            existing_item.amortised_cost += usage_item.amortised_cost
-            existing_item.total_cost += usage_item.total_cost
-            existing_item.unit_price += usage_item.unit_price
+            combine_items(existing_item, usage_item)
 
             # Update the dict entry
             all_items[usage_item.id] = existing_item
