@@ -5,6 +5,6 @@ It will get all the usage data for subscriptions in a management group or billin
 
 `costmanagement` is also an Azure function. It should be deployed to the same function app as the `usage` function.
 
-`monthly_usage` uses similar code as `usage` but runs on the 7th day of each month to get the previous month's usage.
+`monthly_usage` uses similar code as `usage` but runs bi-hourly on the 7th and 8th day of each month to get the previous month's usage.
 
 See the docs for more.

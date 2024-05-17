@@ -64,11 +64,10 @@ def get_all_usage(
             f"/providers/Microsoft.Management/managementGroups/{mgmt_group}"
         )
 
-    # metric_expression options: ActualCost or AmortizedCost
-    #   Actual Cost - Provides data to reconcile with your monthly bill.
-    #   Amortized Cost - This dataset is similar to the Actual Cost dataset except
-    #     that - the EffectivePrice for the usage that gets reservation discount is
-    #     the prorated cost of the reservation (instead of being zero).
+    # Actual Cost - Provides data to reconcile with your monthly bill.
+    # Amortized Cost - This dataset is similar to the Actual Cost dataset except
+    # that the EffectivePrice for the usage that gets reservation discount is
+    # the prorated cost of the reservation (instead of being zero).
     metric_expression = "AmortizedCost"
 
     data = consumption_client.usage_details.list(
@@ -109,18 +108,14 @@ def retrieve_usage(usage_data):
         else:
             usage_item.amortised_cost = 0.0
 
-        if usage_item.id in all_items:
-            existing_item = all_items[usage_item.id]
-            # Add to the existing item
+        if existing_item := all_items.get(usage_item.id):
+            # Update the existing item
             existing_item.quantity += usage_item.quantity
             existing_item.effective_price += usage_item.effective_price
             existing_item.cost += usage_item.cost
             existing_item.amortised_cost += usage_item.amortised_cost
             existing_item.total_cost += usage_item.total_cost
             existing_item.unit_price += usage_item.unit_price
-
-            # Update the dict entry
-            all_items[usage_item.id] = existing_item
 
         else:
             all_items[usage_item.id] = usage_item
@@ -133,7 +128,7 @@ def retrieve_usage(usage_data):
         datetime.now() - started_processing_at,
     )
 
-    return list(all_items.values())
+    return all_item_list
 
 
 def retrieve_and_send_usage(hostname_or_ip, usage_data):

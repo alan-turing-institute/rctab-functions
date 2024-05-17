@@ -1,6 +1,6 @@
 """Tests for function app utils."""
 import logging
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from unittest import TestCase, main
 from unittest.mock import MagicMock, call, patch
 from uuid import UUID
@@ -9,9 +9,22 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 
 import utils
+from utils.models import Usage
+from utils.usage import retrieve_usage
+
+# pylint: disable=attribute-defined-outside-init, too-many-instance-attributes
 
 
-class TestUsage(TestCase):
+class DummyAzureUsage:
+    def __init__(self):
+        # pylint: disable=invalid-name
+        self.id = 1
+        # pylint: enable=invalid-name
+        self.subscription_id = str(UUID(int=0))
+        self.date = date.today()
+
+
+class TestUsageUtils(TestCase):
     """Tests for the utils.usage module."""
 
     def test_get_all_usage(self):
@@ -165,6 +178,77 @@ class TestUsage(TestCase):
                         timeout=60,
                     )
 
+    def test_retrieve_usage_1(self):
+        """Check the retrieve usage function sets amortised cost to 0."""
+        # pylint: disable=invalid-name
+        self.maxDiff = None
+        # pylint: enable=invalid-name
+
+        datum_1 = DummyAzureUsage()
+        datum_1.quantity = 1
+        datum_1.cost = 1
+        datum_1.total_cost = 1
+        datum_1.unit_price = 1
+        datum_1.effective_price = 1
+
+        datum_2 = DummyAzureUsage()
+        datum_2.quantity = 1
+        datum_2.cost = 1
+        datum_2.total_cost = 1
+        datum_2.unit_price = 1
+        datum_2.effective_price = 1
+
+        actual = retrieve_usage((datum_1, datum_2))
+        expected = Usage(
+            id="1",
+            subscription_id=UUID(int=0),
+            quantity=2,
+            cost=2,
+            date=date.today(),
+            amortised_cost=0,
+            total_cost=2,
+            unit_price=2,
+            effective_price=2,
+        )
+        self.assertListEqual([expected], actual)
+
+    def test_retrieve_usage_2(self):
+        """Check the retrieve usage function sets cost to 0."""
+        # pylint: disable=invalid-name
+        self.maxDiff = None
+        # pylint: enable=invalid-name
+
+        datum_1 = DummyAzureUsage()
+        datum_1.reservation_id = "x"
+        datum_1.quantity = 1
+        datum_1.cost = 1
+        datum_1.total_cost = 1
+        datum_1.unit_price = 1
+        datum_1.effective_price = 1
+
+        datum_2 = DummyAzureUsage()
+        datum_2.reservation_id = "x"
+        datum_2.quantity = 1
+        datum_2.cost = 1
+        datum_2.total_cost = 1
+        datum_2.unit_price = 1
+        datum_2.effective_price = 1
+
+        actual = retrieve_usage((datum_1, datum_2))
+        expected = Usage(
+            reservation_id="x",
+            id="1",
+            subscription_id=UUID(int=0),
+            quantity=2,
+            cost=0,
+            date=datetime.now(),
+            amortised_cost=2,
+            total_cost=2,
+            unit_price=2,
+            effective_price=2,
+        )
+        self.assertListEqual([expected], actual)
+
     def test_date_range(self):
         start = datetime(year=2021, month=11, day=1, hour=2)
         end = datetime(year=2021, month=11, day=2, hour=2)
@@ -180,24 +264,26 @@ class TestUsage(TestCase):
 class TestSettings(TestCase):
     """Tests for the utils.settings module."""
 
+    private_key = rsa.generate_private_key(
+        public_exponent=65537,
+        key_size=2048,
+    )
+    private_key_str = private_key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.OpenSSH,
+        encryption_algorithm=serialization.NoEncryption(),
+    ).decode("utf-8")
+
     def test_valid_settings(self):
         """Check that we can make a Settings instance, given the right arguments."""
-        private_key = rsa.generate_private_key(
-            public_exponent=65537,
-            key_size=2048,
-        )
-        private_key_str = private_key.private_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PrivateFormat.OpenSSH,
-            encryption_algorithm=serialization.NoEncryption(),
-        ).decode("utf-8")
+
         utils.settings.Settings(
-            PRIVATE_KEY=private_key_str,
+            PRIVATE_KEY=self.private_key_str,
             API_URL="https://a.b.com",
-            BILLING_ACCOUNT_ID="111111",
             USAGE_HISTORY_DAYS=10,
             USAGE_HISTORY_DAYS_OFFSET=1,
             LOG_LEVEL="WARNING",
+            MGMT_GROUP="some-mgmt-group",
             _env_file=None,
         )
 
@@ -215,32 +301,57 @@ class TestSettings(TestCase):
         settings = utils.settings.Settings(
             PRIVATE_KEY=private_key_str,
             API_URL="https://a.b.com",
-            BILLING_ACCOUNT_ID="111111",
+            BILLING_ACCOUNT_ID="12345",
             _env_file=None,
         )
 
         self.assertEqual(settings.USAGE_HISTORY_DAYS_OFFSET, 0)
         self.assertEqual(settings.USAGE_HISTORY_DAYS, 3)
         self.assertEqual(settings.LOG_LEVEL, "WARNING")
+        self.assertIsNone(settings.CM_MGMT_GROUP)
+        self.assertIsNone(settings.MGMT_GROUP)
 
     def test_key_validation(self):
-        self.assertRaises(
-            ValueError,
-            lambda: utils.settings.Settings(
+        with self.assertRaisesRegex(
+            ValueError, 'Expected key to end with "-----END OPENSSH PRIVATE KEY-----".'
+        ):
+            utils.settings.Settings(
                 API_URL="https://a.b.com",
                 PRIVATE_KEY="-----BEGIN OPENSSH PRIVATE KEY-----",
                 _env_file=None,
-            ),
-        )
+            )
 
-        self.assertRaises(
+        with self.assertRaisesRegex(
             ValueError,
-            lambda: utils.settings.Settings(
+            'Expected key to start with "-----BEGIN OPENSSH PRIVATE KEY-----".',
+        ):
+            utils.settings.Settings(
                 API_URL="https://a.b.com",
                 PRIVATE_KEY="-----END OPENSSH PRIVATE KEY-----",
                 _env_file=None,
-            ),
-        )
+            )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "Exactly one of MGMT_GROUP and BILLING_ACCOUNT_ID should be empty.",
+        ):
+            utils.settings.Settings(
+                PRIVATE_KEY=self.private_key_str,
+                API_URL="https://a.b.com",
+                MGMT_GROUP="x",
+                BILLING_ACCOUNT_ID="y",
+                _env_file=None,
+            )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "Exactly one of MGMT_GROUP and BILLING_ACCOUNT_ID should be empty.",
+        ):
+            utils.settings.Settings(
+                PRIVATE_KEY=self.private_key_str,
+                API_URL="https://a.b.com",
+                _env_file=None,
+            )
 
 
 class TestLoggingUtils(TestCase):

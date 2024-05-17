@@ -7,3 +7,5 @@
 !usage/*.py
 !usage/function.json
 !utils/*.py
+!monthly_usage/*.py
+!monthly_usage/function.json
