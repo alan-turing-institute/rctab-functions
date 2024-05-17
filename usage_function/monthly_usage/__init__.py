@@ -23,7 +23,6 @@ def get_dates() -> Union[None, Tuple[date], Tuple[date, date]]:
     now = datetime.now()
 
     # Map our day (7 or 8) and hour (0-22) to a day.
-    # day_of_month = ((now.day - 6) * now.hour) + 1
     day_of_month = ((now.day - 7) * 24) + now.hour + 1
 
     end_of_last_month = now - timedelta(days=now.day)
