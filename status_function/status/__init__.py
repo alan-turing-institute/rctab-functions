@@ -160,7 +160,7 @@ def get_principal(
     return None
 
 
-def get_principal_details(principal: Any):
+def get_principal_details(principal: Any) -> dict[str, Any]:
     """Get details of a service principal.
 
     Args:

@@ -34,7 +34,7 @@ EXPECTED_DICT = {
 class TestStatus(TestCase):
     """Tests for the __init__.py file."""
 
-    def test_main(self):
+    def test_main(self) -> None:
         with patch("status.get_all_status") as mock_get_all_status:
             mock_get_all_status.return_value = ["status1", "status2"]
 
@@ -68,7 +68,7 @@ class TestStatus(TestCase):
                             ]
                         )
 
-    def test_send_status(self):
+    def test_send_status(self) -> None:
         example_status = SubscriptionStatus(
             subscription_id=UUID(int=1),
             display_name="sub1",
@@ -131,7 +131,7 @@ class TestStatus(TestCase):
                         timeout=60,
                     )
 
-    def test_get_principal_details_user(self):
+    def test_get_principal_details_user(self) -> None:
         """test get_principal_details returns the expected dictionary of user
         information.
         """
@@ -147,7 +147,7 @@ class TestStatus(TestCase):
         actual = status.get_principal_details(mock_user)
         self.assertDictEqual(actual, expected)
 
-    def test_get_principal_details_service_principal(self):
+    def test_get_principal_details_service_principal(self) -> None:
         """test get_principal_details returns the expected dictionary
         of service principal information
         """
@@ -162,7 +162,7 @@ class TestStatus(TestCase):
         actual = status.get_principal_details(mock_user)
         self.assertDictEqual(actual, expected)
 
-    def test_get_ad_group_principals(self):
+    def test_get_ad_group_principals(self) -> None:
         """Test get_ad_group_principals populates the user details for members."""
         expected = [
             {
@@ -185,7 +185,7 @@ class TestStatus(TestCase):
             actual = status.get_ad_group_principals(mock_ad_group, mgc)
             self.assertListEqual(actual, expected)
 
-    def test_get_role_assignment_models__with_user(self):
+    def test_get_role_assignment_models__with_user(self) -> None:
         """test get_role_assignment_models returns the expected result when
         given a user
         """
@@ -215,7 +215,7 @@ class TestStatus(TestCase):
                     )
                     self.assertListEqual([expected], actual)
 
-    def test_get_role_assignment_models__with_service_principal(self):
+    def test_get_role_assignment_models__with_service_principal(self) -> None:
         """test get_role_assignment_models returns the expected result when
         given a service_principal
         """
@@ -244,7 +244,7 @@ class TestStatus(TestCase):
                     )
                     self.assertListEqual([expected], actual)
 
-    def test_get_role_assignment_models__with_adgroup(self):
+    def test_get_role_assignment_models__with_adgroup(self) -> None:
         """test get_role_assignment_models returns the expected result when
         given an ADGroup
         """
@@ -280,7 +280,7 @@ class TestStatus(TestCase):
                     )
                     self.assertListEqual(expected, actual)
 
-    def test_get_role_assignment_models__with_other_role_assignment(self):
+    def test_get_role_assignment_models__with_other_role_assignment(self) -> None:
         """test get_role_assignment_models returns the expected result when
         given something other than a User, ServicePrincipal or ADGroup
         """
@@ -303,7 +303,7 @@ class TestStatus(TestCase):
                 )
                 self.assertListEqual([expected], actual)
 
-    def test_get_subscription_role_assignment_models__no_error(self):
+    def test_get_subscription_role_assignment_models__no_error(self) -> None:
         """test get_subscription_role_assignment_models returns a list of
         RoleAssignments"""
         mock_subscription = MagicMock()
@@ -336,7 +336,7 @@ class TestStatus(TestCase):
 
     def test_get_subscription_role_assignment_models__cloud_error_returns_empty_list(
         self,
-    ):
+    ) -> None:
         """test get_subscription_role_assignment_models returns an empty list when a
         CloudError occurs
         """
@@ -356,7 +356,7 @@ class TestStatus(TestCase):
                             )
                             self.assertListEqual(actual, [])
 
-    def test_get_all_status(self):
+    def test_get_all_status(self) -> None:
         with patch("status.SubscriptionClient") as mock_sub_client:
             mock_list_func = mock_sub_client.return_value.subscriptions.list
             mock_list_func.return_value = [
@@ -489,7 +489,7 @@ class TestStatus(TestCase):
                         actual = status.get_all_status(UUID(int=1000))
                         self.assertListEqual(expected, actual)
 
-    def test_get_all_status_error_handling(self):
+    def test_get_all_status_error_handling(self) -> None:
         # ToDo Could we make a patch() that incorporates these four patches?
         with patch("status.SubscriptionClient") as mock_sub_client:
             mock_list_func = mock_sub_client.return_value.subscriptions.list
@@ -542,7 +542,7 @@ class TestStatus(TestCase):
 class TestSettings(TestCase):
     """Tests for the status.settings module."""
 
-    def test_key_validation(self):
+    def test_key_validation(self) -> None:
         self.assertRaises(
             ValueError,
             lambda: status.settings.Settings(
@@ -559,7 +559,7 @@ class TestSettings(TestCase):
             ),
         )
 
-    def test_settings(self):
+    def test_settings(self) -> None:
         """Check that we can make a Settings instance, given the right arguments."""
         private_key = rsa.generate_private_key(
             public_exponent=65537,
@@ -581,7 +581,7 @@ class TestSettings(TestCase):
 class TestAuth(TestCase):
     """Tests for the status.auth module."""
 
-    def test_bearer_auth(self):
+    def test_bearer_auth(self) -> None:
         private_key = rsa.generate_private_key(
             public_exponent=65537,
             key_size=2048,
@@ -615,7 +615,7 @@ class TestAuth(TestCase):
 
 
 class TestLoggingUtils(TestCase):
-    def test_called_twice(self):
+    def test_called_twice(self) -> None:
         """Adding multiple loggers could cause large storage bills."""
         with patch("status.settings.get_settings") as mock_get_settings:
             mock_get_settings.return_value.CENTRAL_LOGGING_CONNECTION_STRING = "my-str"
