@@ -60,4 +60,4 @@ def get_settings() -> Settings:
     Returns:
         The settings.
     """
-    return Settings()  # type: ignore
+    return Settings()

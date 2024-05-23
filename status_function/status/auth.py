@@ -45,7 +45,7 @@ class BearerAuth(requests.auth.AuthBase):
 
         # jwt.encode(), used to create the access token, doesn't support DSA keys
         allowed_type = EllipticCurvePrivateKey | RSAPrivateKey | Ed25519PrivateKey
-        self.private_key: allowed_type = private_key  # type: ignore
+        self.private_key: allowed_type = private_key
 
     def create_access_token(self) -> str:
         """Create an access token for the user to access the API.

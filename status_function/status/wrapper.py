@@ -17,7 +17,7 @@ class CredentialWrapper(BasicTokenAuthentication):
         credential: Optional[DefaultAzureCredential] = None,
         resource_id: str = "https://management.azure.com/.default",
         **kwargs: dict
-    ):
+    ) -> None:
         """Wrap any azure-identity credential to work with SDK.
 
         Applies to credentials that need azure.common.credentials/msrestazure.
@@ -39,12 +39,12 @@ class CredentialWrapper(BasicTokenAuthentication):
             )  # This line edited
         self._policy = BearerTokenCredentialPolicy(credential, resource_id, **kwargs)
 
-    def _make_request(self):
+    def _make_request(self) -> PipelineRequest:
         return PipelineRequest(
             HttpRequest("CredentialWrapper", "https://fakeurl"), PipelineContext(None)
         )
 
-    def set_token(self):
+    def set_token(self) -> None:
         """Ask the azure-core BearerTokenCredentialPolicy policy to get a token.
 
         Using the policy gives us for free the caching system of azure-core.
@@ -61,7 +61,7 @@ class CredentialWrapper(BasicTokenAuthentication):
         token = request.http_request.headers["Authorization"].split(" ", 1)[1]
         self.token = {"access_token": token}
 
-    def signed_session(self, session=None) -> Session:
+    def signed_session(self, session: Optional[Session] = None) -> Session:
         """Sign the session.
 
         Args:
