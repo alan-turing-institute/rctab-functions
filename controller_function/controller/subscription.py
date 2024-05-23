@@ -14,7 +14,7 @@ CREDENTIALS = DefaultAzureCredential()
 SUBSCRIPTION_CLIENT = SubscriptionClient(credential=CREDENTIALS)
 
 
-def new_post(
+def new_post(  # type: ignore
     self,
     url,
     params=None,

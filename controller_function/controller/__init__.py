@@ -1,9 +1,12 @@
 """An Azure Function App to disable subscriptions."""
 import logging
 from datetime import datetime
+from typing import Iterable
+from uuid import UUID
 
 import azure.functions as func
 from azure.core.exceptions import HttpResponseError
+from pydantic import HttpUrl
 from requests import get
 
 from controller import models, settings
@@ -14,11 +17,11 @@ from controller.subscription import disable_subscription, enable_subscription
 logger = logging.getLogger(__name__)
 
 
-def get_desired_states(api_url):
+def get_desired_states(api_url: HttpUrl) -> list[models.DesiredState]:
     """Get a list of subscriptions and their desired states."""
     started_at = datetime.now()
 
-    endpoint = api_url + "/accounting/desired-states"
+    endpoint = str(api_url) + "accounting/desired-states"
     logger.info(endpoint)
     response = get(url=endpoint, auth=BearerAuth(), timeout=120)
 
@@ -41,7 +44,7 @@ def get_desired_states(api_url):
     return desired_states
 
 
-def disable_subscriptions(subs_to_deactivate):
+def disable_subscriptions(subs_to_deactivate: Iterable[UUID]) -> None:
     """Disable Azure subscriptions, which will stop all spending."""
     logger.info("Disabling subscriptions: %s", subs_to_deactivate)
 
@@ -58,7 +61,7 @@ def disable_subscriptions(subs_to_deactivate):
     logger.info("Disabling subscriptions took %s.", str(datetime.now() - started_at))
 
 
-def enable_subscriptions(subs_to_enable):
+def enable_subscriptions(subs_to_enable: Iterable[UUID]) -> None:
     """Enable Azure subscriptions."""
     logger.info("Enabling subscriptions %s.", subs_to_enable)
 

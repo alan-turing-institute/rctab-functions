@@ -1,6 +1,7 @@
 """Tests for controller package."""
 import json
 import logging
+from typing import Final
 from unittest import TestCase, main
 from unittest.mock import MagicMock, call, patch
 from uuid import UUID
@@ -9,15 +10,19 @@ import jwt
 from azure.core.exceptions import HttpResponseError
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
+from pydantic import HttpUrl, TypeAdapter
 
 import controller
 from controller.models import DesiredState
+
+HTTP_ADAPTER: Final = TypeAdapter(HttpUrl)
+VALID_URL: Final = HTTP_ADAPTER.validate_python("https://my.org")
 
 
 class TestControllerModule(TestCase):
     """Tests for the __init__.py file."""
 
-    def test_main(self):
+    def test_main(self) -> None:
         with patch("controller.get_desired_states") as mock_get_desired_states:
             desired_states = [
                 DesiredState(subscription_id=UUID(int=22), desired_state="Disabled"),
@@ -30,7 +35,7 @@ class TestControllerModule(TestCase):
             with patch("controller.disable_subscriptions") as mock_deactivate:
                 with patch("controller.enable_subscriptions") as mock_enable:
                     mock_settings = controller.settings.Settings(
-                        API_URL="https://my.host",
+                        API_URL=VALID_URL,
                         PRIVATE_KEY=(
                             "-----BEGIN OPENSSH PRIVATE KEY-----"
                             "abcde"
@@ -50,19 +55,19 @@ class TestControllerModule(TestCase):
 
                         mock_enable.assert_called_with([UUID(int=44)])
 
-    def test_disable_subscriptions(self):
+    def test_disable_subscriptions(self) -> None:
         with patch("controller.disable_subscription") as mock_disable:
             controller.disable_subscriptions([UUID(int=22), UUID(int=33)])
 
             mock_disable.assert_has_calls([call(UUID(int=22)), call(UUID(int=33))])
 
-    def test_enable_subscriptions(self):
+    def test_enable_subscriptions(self) -> None:
         with patch("controller.enable_subscription") as mock_enable:
             controller.enable_subscriptions([UUID(int=22), UUID(int=33)])
 
             mock_enable.assert_has_calls([call(UUID(int=22)), call(UUID(int=33))])
 
-    def test_get_desired_states(self):
+    def test_get_desired_states(self) -> None:
         with patch("controller.BearerAuth") as mock_auth:
             with patch("controller.get") as mock_get:
                 desired_state_one = controller.models.DesiredState(
@@ -80,24 +85,25 @@ class TestControllerModule(TestCase):
                 # ...and a status_code.
                 mock_get.return_value.status_code = 200
 
-                actual = controller.get_desired_states("https://my.host.url")
+                actual = controller.get_desired_states(VALID_URL)
                 mock_get.assert_called_with(
-                    url="https://my.host.url/accounting/desired-states",
+                    url="https://my.org/accounting/desired-states",
                     auth=mock_auth.return_value,
                     timeout=120,
                 )
 
                 self.assertEqual(expected, actual)
 
-    def test_get_desired_states_raises(self):
+    def test_get_desired_states_raises(self) -> None:
         with patch("controller.BearerAuth"):
             with patch("controller.logger.error") as mock_error:  # TODO: fix this
                 with patch("controller.get") as mock_get:
                     mock_get.return_value.status_code = 500
 
                     host = "https://internal.error.host"
+                    host_url = HTTP_ADAPTER.validate_python(host)
                     with self.assertRaises(RuntimeError):
-                        controller.get_desired_states(host)
+                        controller.get_desired_states(host_url)
 
                     expected_str = (
                         "Could not get desired states. %s returned %s status."
@@ -106,7 +112,7 @@ class TestControllerModule(TestCase):
                         expected_str, host + "/accounting/desired-states", str(500)
                     )
 
-    def test_disable_subscriptions_handles(self):
+    def test_disable_subscriptions_handles(self) -> None:
         with patch("controller.disable_subscription") as mock_disable:
             mock_disable.side_effect = HttpResponseError("Wrong permissions!")
             controller.disable_subscriptions([UUID(int=8637)])
@@ -115,7 +121,7 @@ class TestControllerModule(TestCase):
 class TestSettings(TestCase):
     """Tests for the controller.settings module."""
 
-    def test_key_validation(self):
+    def test_key_validation(self) -> None:
         self.assertRaises(
             ValueError,
             lambda: controller.settings.Settings(
@@ -132,7 +138,7 @@ class TestSettings(TestCase):
             ),
         )
 
-    def test_settings(self):
+    def test_settings(self) -> None:
         """Check that we can make a Settings instance, given the right arguments."""
         private_key = rsa.generate_private_key(
             public_exponent=65537,
@@ -153,7 +159,7 @@ class TestSettings(TestCase):
 class TestAuth(TestCase):
     """Test the controller.auth module."""
 
-    def test_bearer_auth(self):
+    def test_bearer_auth(self) -> None:
         private_key = rsa.generate_private_key(
             public_exponent=65537,
             key_size=2048,
@@ -187,7 +193,7 @@ class TestAuth(TestCase):
 
 
 class TestLoggingUtils(TestCase):
-    def test_called_twice(self):
+    def test_called_twice(self) -> None:
         """Adding multiple loggers could cause large storage bills."""
         with patch("controller.settings.get_settings") as mock_get_settings:
             mock_get_settings.return_value.CENTRAL_LOGGING_CONNECTION_STRING = "my-str"
