@@ -1,6 +1,7 @@
 """Tests for status package."""
 import logging
 from datetime import datetime
+from importlib import import_module
 from types import SimpleNamespace
 from typing import Final
 from unittest import TestCase, main
@@ -20,7 +21,7 @@ from status.models import RoleAssignment, SubscriptionState, SubscriptionStatus
 HTTP_ADAPTER: Final = TypeAdapter(HttpUrl)
 VALID_URL: Final = HTTP_ADAPTER.validate_python("https://my.org")
 
-EXPECTED_DICT = {
+EXPECTED_DICT: Final = {
     "role_definition_id": str(UUID(int=10)),
     "role_name": "contributor",
     "principal_id": str(UUID(int=100)),
@@ -29,6 +30,16 @@ EXPECTED_DICT = {
     "mail": None,
     "principal_type": None,
 }
+
+API_VERSION: Final = "2022-04-01"
+# e.g. v2022_04_01
+API_VERSION_PACKAGE: Final = "v" + API_VERSION.replace("-", "_")
+OPERATIONS_MODULE: Final = import_module(
+    f"azure.mgmt.authorization.{API_VERSION_PACKAGE}.operations"
+)
+MODELS_MODULE: Final = import_module(
+    f"azure.mgmt.authorization.{API_VERSION_PACKAGE}.models"
+)
 
 
 class TestStatus(TestCase):
@@ -198,10 +209,11 @@ class TestStatus(TestCase):
         expected_dict = EXPECTED_DICT.copy()
         expected_dict.update(expected_values)
 
-        mock_role_assignment = MagicMock()
-        mock_role_assignment.properties.role_definition_id = str(UUID(int=10))
-        mock_role_assignment.properties.principal_id = str(UUID(int=100))
-        mock_role_assignment.properties.scope = "/subscription_id/"
+        role_assignment = MODELS_MODULE.RoleAssignment(
+            role_definition_id=str(UUID(int=10)),
+            principal_id=str(UUID(int=100)),
+        )
+        role_assignment.scope = "/subscription_id/"
         with patch("status.GraphRbacManagementClient") as mock_grmc:
             expected = RoleAssignment(**expected_dict)
             with patch("status.get_principal") as mock_get_principal:
@@ -209,7 +221,7 @@ class TestStatus(TestCase):
                 with patch("status.get_principal_details") as mock_gud:
                     mock_gud.return_value = expected_values
                     actual = status.get_role_assignment_models(
-                        mock_role_assignment,
+                        role_assignment,
                         "contributor",
                         mock_grmc,
                     )
@@ -225,10 +237,11 @@ class TestStatus(TestCase):
             "principal_type": ServicePrincipal,
         }
         expected_dict = EXPECTED_DICT.copy()
-        mock_role_assignment = MagicMock()
-        mock_role_assignment.properties.role_definition_id = str(UUID(int=10))
-        mock_role_assignment.properties.principal_id = str(UUID(int=100))
-        mock_role_assignment.properties.scope = "/subscription_id/"
+        role_assignment = MODELS_MODULE.RoleAssignment(
+            role_definition_id=str(UUID(int=10)),
+            principal_id=str(UUID(int=100)),
+        )
+        role_assignment.scope = "/subscription_id/"
 
         with patch("status.GraphRbacManagementClient") as mock_grmc:
             expected_dict.update(expected_values)
@@ -238,7 +251,7 @@ class TestStatus(TestCase):
                 with patch("status.get_principal_details") as mock_spd:
                     mock_spd.return_value = expected_values
                     actual = status.get_role_assignment_models(
-                        mock_role_assignment,
+                        role_assignment,
                         "contributor",
                         mock_grmc,
                     )
@@ -260,10 +273,11 @@ class TestStatus(TestCase):
         for i in range(2):
             expected_dict_list[i].update(expected_values[i])
 
-        mock_role_assignment = MagicMock()
-        mock_role_assignment.properties.role_definition_id = str(UUID(int=10))
-        mock_role_assignment.properties.principal_id = str(UUID(int=100))
-        mock_role_assignment.properties.scope = "/subscription_id/"
+        role_assignment = MODELS_MODULE.RoleAssignment(
+            role_definition_id=str(UUID(int=10)),
+            principal_id=str(UUID(int=100)),
+        )
+        role_assignment.scope = "/subscription_id/"
 
         with patch("status.GraphRbacManagementClient") as mock_grmc:
             expected = [
@@ -274,7 +288,7 @@ class TestStatus(TestCase):
                 with patch("status.get_ad_group_principals") as mock_adgu:
                     mock_adgu.return_value = expected_values
                     actual = status.get_role_assignment_models(
-                        mock_role_assignment,
+                        role_assignment,
                         "contributor",
                         mock_grmc,
                     )
@@ -286,10 +300,11 @@ class TestStatus(TestCase):
         """
         expected_dict = EXPECTED_DICT.copy()
 
-        mock_role_assignment = MagicMock()
-        mock_role_assignment.properties.role_definition_id = str(UUID(int=10))
-        mock_role_assignment.properties.principal_id = str(UUID(int=100))
-        mock_role_assignment.properties.scope = "/subscription_id/"
+        role_assignment = MODELS_MODULE.RoleAssignment(
+            role_definition_id=str(UUID(int=10)),
+            principal_id=str(UUID(int=100)),
+        )
+        role_assignment.scope = "/subscription_id/"
 
         with patch("status.GraphRbacManagementClient") as mock_grmc:
             expected_dict.update({"mail": None})
@@ -297,11 +312,29 @@ class TestStatus(TestCase):
             with patch("status.get_principal") as mock_get_principal:
                 mock_get_principal.return_value = SimpleNamespace()
                 actual = status.get_role_assignment_models(
-                    mock_role_assignment,
+                    role_assignment,
                     "contributor",
                     mock_grmc,
                 )
                 self.assertListEqual([expected], actual)
+
+    def test_get_role_assignment_models__no_principal(self) -> None:
+        """test get_role_assignment_models can handle not finding a principal"""
+        with patch("status.logger") as mock_logger, patch(
+            "status.get_principal"
+        ) as mock_get_principal:
+            mock_get_principal.return_value = None
+            principal_id = str(UUID(int=100))
+            role_assignment = MODELS_MODULE.RoleAssignment(
+                role_definition_id=str(UUID(int=10)),
+                role_name="Contributor",
+                principal_id=principal_id,
+            )
+            role_assignment.scope = "/"
+            status.get_role_assignment_models(role_assignment, "somerole", None)
+        mock_logger.warning.assert_called_with(
+            "Could not retrieve principal data for principal id %s", principal_id
+        )
 
     def test_get_subscription_role_assignment_models__no_error(self) -> None:
         """test get_subscription_role_assignment_models returns a list of
@@ -314,16 +347,18 @@ class TestStatus(TestCase):
                 with patch("status.get_role_def_dict") as mock_grdd:
                     mock_grdd.return_value = {str(UUID(int=10)): "contributor"}
                     with patch("status.get_role_assignments_list") as mock_gral:
+                        role_assignment = MODELS_MODULE.RoleAssignment()
+                        role_assignment.scope = "/"
                         mock_gral.return_value = [
-                            SimpleNamespace(
-                                properties=SimpleNamespace(
-                                    role_definition_id=str(UUID(int=10)),
-                                    principal_id=str(UUID(int=100 + i)),
-                                    scope="/",
-                                )
+                            MODELS_MODULE.RoleAssignment(
+                                role_definition_id=str(UUID(int=10)),
+                                principal_id=str(UUID(int=100 + i)),
                             )
                             for i in range(3)
                         ]
+                        for item in mock_gral.return_value:
+                            item.scope = "/"
+
                         with patch("status.get_principal") as mock_principal:
                             mock_principal.return_value = User(display_name="Unknown")
                             actual = status.get_subscription_role_assignment_models(
@@ -367,17 +402,20 @@ class TestStatus(TestCase):
                 )
             ]
 
+            # Import the role assignments class from the specific API version.
+
+            mock_role_assignments = MagicMock(
+                spec=OPERATIONS_MODULE.RoleAssignmentsOperations
+            )
             with patch("status.AuthClient") as mock_auth_client:
-                mock_assign_func = mock_auth_client.return_value.role_assignments.list
-                mock_assign_func.return_value = [
-                    SimpleNamespace(
-                        properties=SimpleNamespace(
-                            role_definition_id=str(UUID(int=10)),
-                            principal_id=str(UUID(int=100)),
-                            scope="/",
-                        )
-                    )
-                ]
+                mock_auth_client.return_value.role_assignments = mock_role_assignments
+                mock_assign_func = mock_role_assignments.list_for_subscription
+                role_assignment = MODELS_MODULE.RoleAssignment(
+                    role_definition_id=str(UUID(int=10)),
+                    principal_id=str(UUID(int=100)),
+                )
+                role_assignment.scope = "/"
+                mock_assign_func.return_value = [role_assignment]
 
                 mock_defs_func = mock_auth_client.return_value.role_definitions.list
                 mock_defs_func.return_value = [
@@ -427,6 +465,7 @@ class TestStatus(TestCase):
                         mock_auth_client.assert_called_with(
                             credential=status.CREDENTIALS,
                             subscription_id=str(UUID(int=1)),
+                            api_version=API_VERSION,
                         )
                         mock_defs_func.assert_called_with(
                             scope="/subscriptions/" + str(UUID(int=1))

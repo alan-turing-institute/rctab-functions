@@ -98,7 +98,7 @@ def get_role_assignments_list(auth_client: AuthClient) -> list:
     Returns:
         A list of role assignments.
     """
-    return list(auth_client.role_assignments.list())
+    return list(auth_client.role_assignments.list_for_subscription())
 
 
 def get_role_def_dict(auth_client: AuthClient, subscription_id: str) -> dict:
@@ -133,7 +133,9 @@ def get_auth_client(
         An authorisation client for the given subscription.
     """
     return AuthClient(
-        credential=CREDENTIALS, subscription_id=subscription.subscription_id
+        credential=CREDENTIALS,
+        subscription_id=subscription.subscription_id,
+        api_version="2022-04-01",
     )
 
 
@@ -218,7 +220,7 @@ def get_role_assignment_models(
         A list of RoleAssignment objects.
     """
     principal_details = []
-    principal = get_principal(assignment.properties.principal_id, graph_client)
+    principal = get_principal(assignment.principal_id, graph_client)
     if principal:
         if isinstance(principal, ADGroup):
             principal_details.extend(get_ad_group_principals(principal, graph_client))
@@ -227,14 +229,14 @@ def get_role_assignment_models(
     else:
         logger.warning(
             "Could not retrieve principal data for principal id %s",
-            assignment.properties.principal_id,
+            assignment.principal_id,
         )
     return [
         models.RoleAssignment(
-            role_definition_id=assignment.properties.role_definition_id,
+            role_definition_id=assignment.role_definition_id,
             role_name=role_name,
-            principal_id=assignment.properties.principal_id,
-            scope=assignment.properties.scope,
+            principal_id=assignment.principal_id,
+            scope=assignment.scope,
             **x
         )
         for x in principal_details
@@ -262,7 +264,7 @@ def get_subscription_role_assignment_models(
         for assignment in assignments_list:
             role_assignments_models += get_role_assignment_models(
                 assignment,
-                role_def_dict.get(assignment.properties.role_definition_id, "Unknown"),
+                role_def_dict.get(assignment.role_definition_id, "Unknown"),
                 graph_client,
             )
     except CloudError as e:
