@@ -62,7 +62,8 @@ def send_status(hostname_or_ip: HttpUrl, status_data: list) -> None:
     """
     logger.warning("Sending status data.")
 
-    # Note that omitting the encoding appears to work but will fail server-side with some characters, such as en-dash.
+    # Note that omitting the encoding appears to work but will
+    # fail server-side with some characters, such as en-dash.
     data = (
         models.AllSubscriptionStatus(status_list=status_data)
         .model_dump_json()
