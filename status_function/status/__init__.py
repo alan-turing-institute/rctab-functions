@@ -62,12 +62,20 @@ def send_status(hostname_or_ip: HttpUrl, status_data: list) -> None:
     """
     logger.warning("Sending status data.")
 
+    # Note that omitting the encoding appears to work but will
+    # fail server-side with some characters, such as en-dash.
+    data = (
+        models.AllSubscriptionStatus(status_list=status_data)
+        .model_dump_json()
+        .encode("utf-8")
+    )
+
     for _ in range(2):
         started_sending_at = datetime.now()
+        # Note that we need to
         resp = requests.post(
-            # todo: test for this change
             str(hostname_or_ip) + "accounting/all-status",
-            models.AllSubscriptionStatus(status_list=status_data).model_dump_json(),
+            data=data,
             auth=BearerAuth(),
             timeout=60,
         )

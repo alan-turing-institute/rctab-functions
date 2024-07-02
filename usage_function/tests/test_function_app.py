@@ -305,7 +305,7 @@ class TestCostManagement(TestCase):
                 ),
             ]
         )
-        expected_json = local_usage.model_dump_json()
+        expected_data = local_usage.model_dump_json().encode("utf-8")
 
         with patch("costmanagement.BearerAuth") as mock_auth:
             with patch("requests.post") as mock_post:
@@ -326,7 +326,7 @@ class TestCostManagement(TestCase):
 
                     expected_call = call(
                         "https://123.234.345.456/accounting/all-cm-usage",
-                        expected_json,
+                        data=expected_data,
                         auth=mock_auth.return_value,
                         timeout=60,
                     )
@@ -356,7 +356,7 @@ class TestCostManagement(TestCase):
 
                     mock_post.assert_called_once_with(
                         "https://123.234.345.456/accounting/all-cm-usage",
-                        expected_json,
+                        data=expected_data,
                         auth=mock_auth.return_value,
                         timeout=60,
                     )

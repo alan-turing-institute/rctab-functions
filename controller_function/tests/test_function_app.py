@@ -79,7 +79,7 @@ class TestControllerModule(TestCase):
 
                 # requests.get() will return an object with a .json() method...
                 mock_get.return_value.json.return_value = [
-                    json.loads(x.model_dump_json()) for x in expected
+                    json.loads(x.model_dump_json().encode("utf-8")) for x in expected
                 ]
 
                 # ...and a status_code.

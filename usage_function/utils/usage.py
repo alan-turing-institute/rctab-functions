@@ -179,10 +179,14 @@ def send_usage(hostname_or_ip, all_item_list, monthly_usage_upload=False):
     else:
         path = "accounting/all-usage"
 
+    # Note that omitting the encoding appears to work but will
+    # fail server-side with some characters, such as en-dash.
+    data = models.AllUsage(usage_list=all_item_list).model_dump_json().encode("utf-8")
+
     for _ in range(2):
         resp = requests.post(
             str(hostname_or_ip) + path,
-            models.AllUsage(usage_list=all_item_list).model_dump_json(),
+            data=data,
             auth=BearerAuth(),
             timeout=60,
         )

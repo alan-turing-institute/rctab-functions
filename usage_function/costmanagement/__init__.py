@@ -164,7 +164,7 @@ def send_usage(hostname_or_ip, all_usage):
         logger.warning("Uploading cost-management usage.")
         resp = requests.post(
             hostname_or_ip + "/accounting/all-cm-usage",
-            all_usage.model_dump_json(),
+            data=all_usage.model_dump_json().encode("utf-8"),
             auth=BearerAuth(),
             timeout=60,
         )
