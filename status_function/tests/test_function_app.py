@@ -96,9 +96,11 @@ class TestStatus(TestCase):
             ],
         )
 
-        expected_json = status.models.AllSubscriptionStatus(
-            status_list=[example_status]
-        ).model_dump_json()
+        expected_data = (
+            status.models.AllSubscriptionStatus(status_list=[example_status])
+            .model_dump_json()
+            .encode("utf-8")
+        )
 
         with patch("status.BearerAuth") as mock_auth:
             with patch("requests.post") as mock_post:
@@ -113,7 +115,7 @@ class TestStatus(TestCase):
 
                     expected_call = call(
                         "https://my.org/accounting/all-status",
-                        expected_json,
+                        data=expected_data,
                         auth=mock_auth.return_value,
                         timeout=60,
                     )
@@ -137,7 +139,7 @@ class TestStatus(TestCase):
 
                     mock_post.assert_called_once_with(
                         "https://my.org/accounting/all-status",
-                        expected_json,
+                        data=expected_data,
                         auth=mock_auth.return_value,
                         timeout=60,
                     )

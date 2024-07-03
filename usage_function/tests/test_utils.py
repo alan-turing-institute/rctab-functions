@@ -128,13 +128,15 @@ class TestUsage(TestCase):
 
                     usage = utils.models.Usage(**usage_dict)
 
-                    expected_json = utils.models.AllUsage(
-                        usage_list=[usage]
-                    ).model_dump_json()
+                    expected_data = (
+                        utils.models.AllUsage(usage_list=[usage])
+                        .model_dump_json()
+                        .encode("utf-8")
+                    )
 
                     expected_call = call(
                         "https://123.123.123.123/accounting/all-usage",
-                        expected_json,
+                        data=expected_data,
                         auth=mock_auth.return_value,
                         timeout=60,
                     )
@@ -160,13 +162,15 @@ class TestUsage(TestCase):
 
                     usage = utils.usage.models.Usage(**usage_dict)
 
-                    expected_json = utils.usage.models.AllUsage(
-                        usage_list=[usage]
-                    ).model_dump_json()
+                    expected_data = (
+                        utils.usage.models.AllUsage(usage_list=[usage])
+                        .model_dump_json()
+                        .encode("utf-8")
+                    )
 
                     mock_post.assert_called_once_with(
                         "https://123.123.123.123/accounting/all-usage",
-                        expected_json,
+                        data=expected_data,
                         auth=mock_auth.return_value,
                         timeout=60,
                     )
