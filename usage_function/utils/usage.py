@@ -1,13 +1,15 @@
 """Utils for collecting and sending Azure usage data."""
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from functools import lru_cache
-from typing import Dict, Optional
+from typing import Dict, Optional, Iterable, Generator
 from uuid import UUID
 
 import requests
 from azure.identity import DefaultAzureCredential
 from azure.mgmt.consumption import ConsumptionManagementClient
+from azure.mgmt.consumption.models import UsageDetailsListResult
+from pydantic_core import Url
 
 from utils import models
 from utils.auth import BearerAuth
@@ -16,7 +18,7 @@ from utils.auth import BearerAuth
 CREDENTIALS = DefaultAzureCredential(exclude_shared_token_cache_credential=True)
 
 
-def date_range(start_date, end_date):
+def date_range(start_date: date, end_date: date) -> Generator[date, None, None]:
     """Yield a datetime day for each day between start_date and end_date (inclusive).
 
     Args:
@@ -32,7 +34,7 @@ def get_all_usage(
     end_time: datetime,
     billing_account_id: Optional[str] = None,
     mgmt_group: Optional[str] = None,
-):
+) -> Iterable[UsageDetailsListResult]:
     """Get Azure usage data for a subscription between start_time and end_time.
 
     Args:
@@ -98,7 +100,7 @@ def combine_items(item_to_update: models.Usage, other_item: models.Usage) -> Non
     item_to_update.cost += other_item.cost
 
 
-def retrieve_usage(usage_data) -> list[models.Usage]:
+def retrieve_usage(usage_data: Iterable[UsageDetailsListResult]) -> list[models.Usage]:
     """Retrieve usage data from Azure.
 
     Args:
@@ -151,7 +153,7 @@ def retrieve_usage(usage_data) -> list[models.Usage]:
     return list(all_items.values())
 
 
-def retrieve_and_send_usage(hostname_or_ip, usage_data):
+def retrieve_and_send_usage(hostname_or_ip: Url, usage_data):
     """Retrieve usage data from Azure and send it to the API.
 
     Args:
@@ -163,7 +165,7 @@ def retrieve_and_send_usage(hostname_or_ip, usage_data):
     send_usage(hostname_or_ip, usage_list)
 
 
-def send_usage(hostname_or_ip, all_item_list, monthly_usage_upload=False):
+def send_usage(hostname_or_ip: Url, all_item_list: list[models.Usage], monthly_usage_upload: bool=False):
     """Post each item of usage_data to a route."""
 
     @lru_cache(1)

@@ -30,11 +30,11 @@ class TestUsage(TestCase):
             mock_list_func.return_value = expected
 
             jan_tenth = datetime(2021, 1, 10, 1, 1, 1, 1)
-            actual = utils.usage.get_all_usage(
+            actual = list(utils.usage.get_all_usage(
                 jan_tenth - timedelta(days=5),
                 jan_tenth,
                 mgmt_group="some-mgmt-group",
-            )
+            ))
 
             mock_client.assert_called_once_with(
                 credential=utils.usage.CREDENTIALS,
