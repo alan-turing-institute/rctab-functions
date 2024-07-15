@@ -1,6 +1,6 @@
 """Utils for collecting and sending Azure usage data."""
 import logging
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta
 from functools import lru_cache
 from typing import Dict, Optional, Iterable, Generator
 from uuid import UUID
@@ -18,7 +18,9 @@ from utils.auth import BearerAuth
 CREDENTIALS = DefaultAzureCredential(exclude_shared_token_cache_credential=True)
 
 
-def date_range(start_date: date, end_date: date) -> Generator[date, None, None]:
+def date_range(
+    start_date: datetime, end_date: datetime
+) -> Generator[datetime, None, None]:
     """Yield a datetime day for each day between start_date and end_date (inclusive).
 
     Args:
@@ -153,7 +155,9 @@ def retrieve_usage(usage_data: Iterable[UsageDetailsListResult]) -> list[models.
     return list(all_items.values())
 
 
-def retrieve_and_send_usage(hostname_or_ip: Url, usage_data):
+def retrieve_and_send_usage(
+    hostname_or_ip: Url, usage_data: Iterable[UsageDetailsListResult]
+) -> None:
     """Retrieve usage data from Azure and send it to the API.
 
     Args:
@@ -165,11 +169,15 @@ def retrieve_and_send_usage(hostname_or_ip: Url, usage_data):
     send_usage(hostname_or_ip, usage_list)
 
 
-def send_usage(hostname_or_ip: Url, all_item_list: list[models.Usage], monthly_usage_upload: bool=False):
+def send_usage(
+    hostname_or_ip: Url,
+    all_item_list: list[models.Usage],
+    monthly_usage_upload: bool = False,
+) -> None:
     """Post each item of usage_data to a route."""
 
     @lru_cache(1)
-    def get_first_run_time():
+    def get_first_run_time() -> datetime:
         return datetime.now()
 
     started_processing_at = datetime.now()
