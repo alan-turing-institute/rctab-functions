@@ -31,7 +31,7 @@ class BearerAuth(requests.auth.AuthBase):
             private_key_txt.encode(), password=b""
         )
 
-    def create_access_token(self):
+    def create_access_token(self) -> str:
         """Create an access token."""
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         expire = datetime.utcnow() + access_token_expires

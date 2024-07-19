@@ -10,15 +10,31 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from pydantic import HttpUrl, TypeAdapter
 
-import utils.logutils
-import utils.models
-import utils.settings
-import utils.usage
+import utils
 
 HTTP_ADAPTER: Final = TypeAdapter(HttpUrl)
 
+# pylint: disable=attribute-defined-outside-init, too-many-instance-attributes
 
-class TestUsage(TestCase):
+
+class DummyAzureUsage:
+    cost: float
+    quantity: int
+    total_cost: float
+    unit_price: float
+    effective_price: float
+    reservation_id: str
+
+    def __init__(self) -> None:
+        # pylint: disable=invalid-name
+        self.id = "1"
+        # pylint: enable=invalid-name
+        self.subscription_id = str(UUID(int=0))
+        self.date = date.today()
+        super().__init__()
+
+
+class TestUsageUtils(TestCase):
     """Tests for the utils.usage module."""
 
     def test_get_all_usage(self) -> None:
@@ -30,10 +46,12 @@ class TestUsage(TestCase):
             mock_list_func.return_value = expected
 
             jan_tenth = datetime(2021, 1, 10, 1, 1, 1, 1)
-            actual = utils.usage.get_all_usage(
-                jan_tenth - timedelta(days=5),
-                jan_tenth,
-                mgmt_group="some-mgmt-group",
+            actual = list(
+                utils.usage.get_all_usage(
+                    jan_tenth - timedelta(days=5),
+                    jan_tenth,
+                    mgmt_group="some-mgmt-group",
+                )
             )
 
             mock_client.assert_called_once_with(
@@ -123,7 +141,7 @@ class TestUsage(TestCase):
                     with self.assertRaises(RuntimeError):
                         utils.usage.retrieve_and_send_usage(
                             HTTP_ADAPTER.validate_python("https://123.123.123.123"),
-                            [example_usage_detail],
+                            [example_usage_detail],  # type: ignore
                         )
 
                     usage = utils.models.Usage(**usage_dict)
@@ -157,7 +175,7 @@ class TestUsage(TestCase):
                 with patch("usage.logging.warning"):
                     utils.usage.retrieve_and_send_usage(
                         HTTP_ADAPTER.validate_python("https://123.123.123.123"),
-                        [example_usage_detail],
+                        [example_usage_detail],  # type: ignore
                     )
 
                     usage = utils.usage.models.Usage(**usage_dict)
@@ -174,6 +192,77 @@ class TestUsage(TestCase):
                         auth=mock_auth.return_value,
                         timeout=60,
                     )
+
+    def test_retrieve_usage_1(self) -> None:
+        """Check the retrieve usage function sets amortised cost to 0."""
+        # pylint: disable=invalid-name
+        self.maxDiff = None
+        # pylint: enable=invalid-name
+
+        datum_1 = DummyAzureUsage()
+        datum_1.quantity = 1
+        datum_1.cost = 1
+        datum_1.total_cost = 1
+        datum_1.unit_price = 1
+        datum_1.effective_price = 1
+
+        datum_2 = DummyAzureUsage()
+        datum_2.quantity = 1
+        datum_2.cost = 1
+        datum_2.total_cost = 1
+        datum_2.unit_price = 1
+        datum_2.effective_price = 1
+
+        actual = utils.usage.retrieve_usage((datum_1, datum_2))  # type: ignore
+        expected = utils.models.Usage(
+            id="1",
+            subscription_id=UUID(int=0),
+            quantity=2,
+            cost=2,
+            date=date.today(),
+            amortised_cost=0,
+            total_cost=2,
+            unit_price=2,
+            effective_price=2,
+        )
+        self.assertListEqual([expected], actual)
+
+    def test_retrieve_usage_2(self) -> None:
+        """Check the retrieve usage function sets cost to 0."""
+        # pylint: disable=invalid-name
+        self.maxDiff = None
+        # pylint: enable=invalid-name
+
+        datum_1 = DummyAzureUsage()
+        datum_1.reservation_id = "x"
+        datum_1.quantity = 1
+        datum_1.cost = 1
+        datum_1.total_cost = 1
+        datum_1.unit_price = 1
+        datum_1.effective_price = 1
+
+        datum_2 = DummyAzureUsage()
+        datum_2.reservation_id = "x"
+        datum_2.quantity = 1
+        datum_2.cost = 1
+        datum_2.total_cost = 1
+        datum_2.unit_price = 1
+        datum_2.effective_price = 1
+
+        actual = utils.usage.retrieve_usage((datum_1, datum_2))  # type: ignore
+        expected = utils.usage.models.Usage(
+            reservation_id="x",
+            id="1",
+            subscription_id=UUID(int=0),
+            quantity=2,
+            cost=0,
+            date=date.today(),
+            amortised_cost=2,
+            total_cost=2,
+            unit_price=2,
+            effective_price=2,
+        )
+        self.assertListEqual([expected], actual)
 
     def test_date_range(self) -> None:
         start = datetime(year=2021, month=11, day=1, hour=2)
