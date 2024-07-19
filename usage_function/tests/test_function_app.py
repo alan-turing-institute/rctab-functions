@@ -372,7 +372,7 @@ class TestCostManagement(TestCase):
 
                 with patch("costmanagement.logger.warning") as mock_log:
 
-                    def send():
+                    def send() -> None:
                         costmanagement.send_usage(
                             "https://123.234.345.456",
                             local_usage,
