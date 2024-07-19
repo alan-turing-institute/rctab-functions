@@ -1,28 +1,31 @@
 """Tests for function app utils."""
 import logging
-import utils
 from datetime import date, datetime, timedelta
 from typing import Final
 from unittest import TestCase, main
 from unittest.mock import MagicMock, call, patch
 from uuid import UUID
 
+from azure.mgmt.consumption.models import UsageDetailsListResult
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from pydantic import HttpUrl, TypeAdapter
+
+import utils
 
 HTTP_ADAPTER: Final = TypeAdapter(HttpUrl)
 
 # pylint: disable=attribute-defined-outside-init, too-many-instance-attributes
 
 
-class DummyAzureUsage:
-    def __init__(self):
+class DummyAzureUsage(UsageDetailsListResult):
+    def __init__(self) -> None:
         # pylint: disable=invalid-name
-        self.id = 1
+        self.id = "1"
         # pylint: enable=invalid-name
         self.subscription_id = str(UUID(int=0))
         self.date = date.today()
+        super().__init__()
 
 
 class TestUsageUtils(TestCase):
@@ -184,7 +187,7 @@ class TestUsageUtils(TestCase):
                         timeout=60,
                     )
 
-    def test_retrieve_usage_1(self):
+    def test_retrieve_usage_1(self) -> None:
         """Check the retrieve usage function sets amortised cost to 0."""
         # pylint: disable=invalid-name
         self.maxDiff = None
@@ -218,7 +221,7 @@ class TestUsageUtils(TestCase):
         )
         self.assertListEqual([expected], actual)
 
-    def test_retrieve_usage_2(self):
+    def test_retrieve_usage_2(self) -> None:
         """Check the retrieve usage function sets cost to 0."""
         # pylint: disable=invalid-name
         self.maxDiff = None

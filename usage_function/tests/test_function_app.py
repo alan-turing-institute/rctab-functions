@@ -1,4 +1,5 @@
 """Tests for Azure functions."""
+
 from datetime import date, datetime, timedelta
 from typing import Final
 from unittest import TestCase, main
@@ -135,16 +136,17 @@ class TestMonthlyUsage(TestCase):
             mock_retrieve.assert_called_once()
             mock_send.assert_called_once()
 
-    def test_get_date_range(self):
+    def test_get_date_range(self) -> None:
         """Test that the get_date_range function returns the expected dates."""
 
         with patch("monthly_usage.datetime") as mock_datetime:
             # On hour 0 of the 7th day, we expect to get dates 1 and 2.
             mock_datetime.now.return_value = datetime(2024, 2, 7, 0, 4, 56)
 
-            expected_dates = (date(2024, 1, 1), date(2024, 1, 2))
+            expected_dates: tuple[date, ...] = (date(2024, 1, 1), date(2024, 1, 2))
 
             actual_dates = monthly_usage.get_dates()
+            assert actual_dates is not None
 
             self.assertTupleEqual(expected_dates, actual_dates)
 
@@ -155,6 +157,7 @@ class TestMonthlyUsage(TestCase):
             expected_dates = (date(2024, 1, 3), date(2024, 1, 4))
 
             actual_dates = monthly_usage.get_dates()
+            assert actual_dates is not None
 
             self.assertTupleEqual(expected_dates, actual_dates)
 
@@ -173,6 +176,7 @@ class TestMonthlyUsage(TestCase):
             expected_dates = (date(2024, 2, 29),)
 
             actual_dates = monthly_usage.get_dates()
+            assert actual_dates is not None
 
             self.assertTupleEqual(expected_dates, actual_dates)
 
@@ -183,7 +187,7 @@ class TestMonthlyUsage(TestCase):
             expected_dates = (date(2024, 1, 31),)
 
             actual_dates = monthly_usage.get_dates()
-            self.assertIsNotNone(actual_dates)
+            assert actual_dates is not None
             self.assertTupleEqual(expected_dates, actual_dates)
 
 

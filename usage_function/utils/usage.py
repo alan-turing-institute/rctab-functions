@@ -2,7 +2,7 @@
 import logging
 from datetime import datetime, timedelta
 from functools import lru_cache
-from typing import Dict, Optional, Iterable, Generator
+from typing import Dict, Generator, Iterable, Optional
 from uuid import UUID
 
 import requests
