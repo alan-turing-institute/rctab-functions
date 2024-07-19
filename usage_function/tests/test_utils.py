@@ -6,7 +6,6 @@ from unittest import TestCase, main
 from unittest.mock import MagicMock, call, patch
 from uuid import UUID
 
-from azure.mgmt.consumption.models import UsageDetailsListResult
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from pydantic import HttpUrl, TypeAdapter
@@ -18,7 +17,14 @@ HTTP_ADAPTER: Final = TypeAdapter(HttpUrl)
 # pylint: disable=attribute-defined-outside-init, too-many-instance-attributes
 
 
-class DummyAzureUsage(UsageDetailsListResult):
+class DummyAzureUsage:
+    cost: float
+    quantity: int
+    total_cost: float
+    unit_price: float
+    effective_price: float
+    reservation_id: str
+
     def __init__(self) -> None:
         # pylint: disable=invalid-name
         self.id = "1"
@@ -207,7 +213,7 @@ class TestUsageUtils(TestCase):
         datum_2.unit_price = 1
         datum_2.effective_price = 1
 
-        actual = utils.usage.retrieve_usage((datum_1, datum_2))
+        actual = utils.usage.retrieve_usage((datum_1, datum_2))  # type: ignore
         expected = utils.models.Usage(
             id="1",
             subscription_id=UUID(int=0),
@@ -243,14 +249,14 @@ class TestUsageUtils(TestCase):
         datum_2.unit_price = 1
         datum_2.effective_price = 1
 
-        actual = utils.usage.retrieve_usage((datum_1, datum_2))
+        actual = utils.usage.retrieve_usage((datum_1, datum_2))  # type: ignore
         expected = utils.usage.models.Usage(
             reservation_id="x",
             id="1",
             subscription_id=UUID(int=0),
             quantity=2,
             cost=0,
-            date=datetime.now(),
+            date=date.today(),
             amortised_cost=2,
             total_cost=2,
             unit_price=2,
