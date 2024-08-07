@@ -5,6 +5,7 @@ Attributes:
     ACCESS_TOKEN_EXPIRE_MINUTES: The number of minutes before an access token.
         value is 5.
 """
+
 from datetime import datetime, timedelta
 
 import jwt

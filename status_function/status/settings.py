@@ -1,4 +1,5 @@
 """Configuration for the app."""
+
 from functools import lru_cache
 from typing import Optional
 from uuid import UUID
