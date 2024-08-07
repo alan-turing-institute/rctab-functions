@@ -23,6 +23,7 @@ pydantic = "^2.7.1"
 pydantic-settings = "^2.2.1"
 PyJWT = {extras = ["crypto"], version = "^2.8.0"}
 requests = "^2.31.0"
+rctab_models = { git = "https://github.com/alan-turing-institute/rctab-models", tag = "0.1.0" }
 
 [tool.poetry.group.dev.dependencies]
 black = "^24.4.2"
@@ -36,7 +37,7 @@ pylint-absolute-imports = "^1.1.0"
 types-requests = "^2.31.0.20240406"  # Should match requests version
 
 [tool.black]
-line-width = 88
+line-length = 88
 
 [build-system]
 requires = ["poetry-core"]

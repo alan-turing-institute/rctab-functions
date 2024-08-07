@@ -16,9 +16,9 @@ from azure.mgmt.costmanagement.models import (
     QueryTimePeriod,
     TimeframeType,
 )
+from rctab_models import models
 
 import utils.settings
-from utils import models
 from utils.auth import BearerAuth
 from utils.logutils import add_log_handler_once
 
