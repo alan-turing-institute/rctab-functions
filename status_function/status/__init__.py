@@ -6,6 +6,7 @@ Attributes:
         Azure AD graph. See https://docs.microsoft.com/en-us/graph/auth-v2-service#4-get-an-access-token # noqa pylint: disable=C0301
 
 """
+
 import logging
 from datetime import datetime
 from functools import lru_cache
@@ -21,11 +22,11 @@ from azure.mgmt.authorization import AuthorizationManagementClient as AuthClient
 from azure.mgmt.subscription import SubscriptionClient
 from msrestazure.azure_exceptions import CloudError
 from pydantic import HttpUrl
+from rctab_models import models
 
-from status import models, settings
+from status import settings
 from status.auth import BearerAuth
 from status.logutils import add_log_handler_once
-from status.models import RoleAssignment
 from status.wrapper import CredentialWrapper
 
 logging.basicConfig(
@@ -254,7 +255,7 @@ def get_role_assignment_models(
 def get_subscription_role_assignment_models(
     subscription: Any,
     graph_client: GraphRbacManagementClient,
-) -> list[RoleAssignment]:
+) -> list[models.RoleAssignment]:
     """Get the role assignment models for each a subscription.
 
     Args:

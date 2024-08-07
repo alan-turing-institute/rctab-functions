@@ -1,4 +1,5 @@
 """An Azure Function App to collect usage information."""
+
 import logging
 import time
 from datetime import datetime, timedelta

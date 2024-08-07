@@ -1,15 +1,16 @@
 """Utils for collecting and sending Azure usage data."""
+
 import logging
 from datetime import datetime, timedelta
 from functools import lru_cache
 from typing import Dict, Optional
 from uuid import UUID
 
+import rctab_models.models
 import requests
 from azure.identity import DefaultAzureCredential
 from azure.mgmt.consumption import ConsumptionManagementClient
 
-from utils import models
 from utils.auth import BearerAuth
 
 # We should only need one set of credentials
@@ -77,7 +78,9 @@ def get_all_usage(
     return data
 
 
-def combine_items(item_to_update: models.Usage, other_item: models.Usage) -> None:
+def combine_items(
+    item_to_update: rctab_models.models.Usage, other_item: rctab_models.models.Usage
+) -> None:
     """Update one Usage with the cost, etc. of another Usage."""
     item_to_update.quantity = (item_to_update.quantity or 0) + (
         other_item.quantity or 0
@@ -98,7 +101,7 @@ def combine_items(item_to_update: models.Usage, other_item: models.Usage) -> Non
     item_to_update.cost += other_item.cost
 
 
-def retrieve_usage(usage_data) -> list[models.Usage]:
+def retrieve_usage(usage_data) -> list[rctab_models.models.Usage]:
     """Retrieve usage data from Azure.
 
     Args:
@@ -109,14 +112,14 @@ def retrieve_usage(usage_data) -> list[models.Usage]:
     """
     logging.warning("Retrieve items")
 
-    all_items: Dict[str, models.Usage] = {}
+    all_items: Dict[str, rctab_models.models.Usage] = {}
     started_processing_at = datetime.now()
 
     for i, item in enumerate(usage_data):
         if i % 200 == 0:
             logging.warning("Requesting item %d", i)
 
-        usage_item = models.Usage(**vars(item))
+        usage_item = rctab_models.models.Usage(**vars(item))
 
         # When AmortizedCost metric is being used, the cost and effective_price values
         # for reserved instances are not zero, thus the cost value is moved to
@@ -181,7 +184,11 @@ def send_usage(hostname_or_ip, all_item_list, monthly_usage_upload=False):
 
     # Note that omitting the encoding appears to work but will
     # fail server-side with some characters, such as en-dash.
-    data = models.AllUsage(usage_list=all_item_list).model_dump_json().encode("utf-8")
+    data = (
+        rctab_models.models.AllUsage(usage_list=all_item_list)
+        .model_dump_json()
+        .encode("utf-8")
+    )
 
     for _ in range(2):
         resp = requests.post(

@@ -1,4 +1,5 @@
 """Copied from https://stackoverflow.com/a/64129363/3324095 and slightly modified."""
+
 from typing import Optional
 
 from azure.core.pipeline import PipelineContext, PipelineRequest

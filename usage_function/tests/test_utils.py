@@ -6,12 +6,12 @@ from unittest import TestCase, main
 from unittest.mock import MagicMock, call, patch
 from uuid import UUID
 
+import rctab_models.models
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from pydantic import HttpUrl, TypeAdapter
 
 import utils.logutils
-import utils.models
 import utils.settings
 import utils.usage
 
@@ -126,10 +126,10 @@ class TestUsage(TestCase):
                             [example_usage_detail],
                         )
 
-                    usage = utils.models.Usage(**usage_dict)
+                    usage = rctab_models.models.Usage(**usage_dict)
 
                     expected_data = (
-                        utils.models.AllUsage(usage_list=[usage])
+                        rctab_models.models.AllUsage(usage_list=[usage])
                         .model_dump_json()
                         .encode("utf-8")
                     )
@@ -160,10 +160,10 @@ class TestUsage(TestCase):
                         [example_usage_detail],
                     )
 
-                    usage = utils.usage.models.Usage(**usage_dict)
+                    usage = rctab_models.models.Usage(**usage_dict)
 
                     expected_data = (
-                        utils.usage.models.AllUsage(usage_list=[usage])
+                        rctab_models.models.AllUsage(usage_list=[usage])
                         .model_dump_json()
                         .encode("utf-8")
                     )
@@ -188,28 +188,30 @@ class TestUsage(TestCase):
 
     def test_combine_items(self) -> None:
         """Test that combine_items works as expected."""
-        existing_item = utils.models.Usage(
+        existing_item = rctab_models.models.Usage(
             id="someid",
             date=date.today(),
             cost=1,
+            total_cost=1,
             subscription_id=UUID(int=0),
         )
-        new_item = utils.models.Usage(
+        new_item = rctab_models.models.Usage(
             id="someid",
             date=date.today(),
             cost=1,
+            total_cost=1,
             subscription_id=UUID(int=0),
         )
 
         utils.usage.combine_items(existing_item, new_item)
-        expected = utils.models.Usage(
+        expected = rctab_models.models.Usage(
             id="someid",
             date=date.today(),
             quantity=0,
             effective_price=0,
             cost=2,
             amortised_cost=0,
-            total_cost=0,
+            total_cost=2,
             unit_price=0,
             subscription_id=UUID(int=0),
         )

@@ -1,4 +1,5 @@
 """Tests for controller package."""
+
 import json
 import logging
 from typing import Final
@@ -11,9 +12,9 @@ from azure.core.exceptions import HttpResponseError
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from pydantic import HttpUrl, TypeAdapter
+from rctab_models.models import DesiredState
 
 import controller
-from controller.models import DesiredState
 
 HTTP_ADAPTER: Final = TypeAdapter(HttpUrl)
 VALID_URL: Final = HTTP_ADAPTER.validate_python("https://my.org")

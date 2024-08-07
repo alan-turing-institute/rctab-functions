@@ -1,4 +1,5 @@
 """Utils to send logs to Azure Application Insights."""
+
 import logging
 from typing import Optional
 

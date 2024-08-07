@@ -1,4 +1,5 @@
 """An Azure Function App to disable subscriptions."""
+
 import logging
 from datetime import datetime
 from typing import Iterable
@@ -7,9 +8,10 @@ from uuid import UUID
 import azure.functions as func
 from azure.core.exceptions import HttpResponseError
 from pydantic import HttpUrl
+from rctab_models import models
 from requests import get
 
-from controller import models, settings
+from controller import settings
 from controller.auth import BearerAuth
 from controller.logutils import add_log_handler_once
 from controller.subscription import disable_subscription, enable_subscription
