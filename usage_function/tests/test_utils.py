@@ -1,4 +1,5 @@
 """Tests for function app utils."""
+
 import logging
 from datetime import date, datetime, timedelta
 from typing import Final
