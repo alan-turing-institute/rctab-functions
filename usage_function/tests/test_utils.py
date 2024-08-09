@@ -30,10 +30,12 @@ class TestUsage(TestCase):
             mock_list_func.return_value = expected
 
             jan_tenth = datetime(2021, 1, 10, 1, 1, 1, 1)
-            actual = utils.usage.get_all_usage(
-                jan_tenth - timedelta(days=5),
-                jan_tenth,
-                mgmt_group="some-mgmt-group",
+            actual = list(
+                utils.usage.get_all_usage(
+                    jan_tenth - timedelta(days=5),
+                    jan_tenth,
+                    mgmt_group="some-mgmt-group",
+                )
             )
 
             mock_client.assert_called_once_with(
@@ -123,7 +125,7 @@ class TestUsage(TestCase):
                     with self.assertRaises(RuntimeError):
                         utils.usage.retrieve_and_send_usage(
                             HTTP_ADAPTER.validate_python("https://123.123.123.123"),
-                            [example_usage_detail],
+                            [example_usage_detail],  # type: ignore
                         )
 
                     usage = utils.models.Usage(**usage_dict)
@@ -157,7 +159,7 @@ class TestUsage(TestCase):
                 with patch("usage.logging.warning"):
                     utils.usage.retrieve_and_send_usage(
                         HTTP_ADAPTER.validate_python("https://123.123.123.123"),
-                        [example_usage_detail],
+                        [example_usage_detail],  # type: ignore
                     )
 
                     usage = utils.usage.models.Usage(**usage_dict)
