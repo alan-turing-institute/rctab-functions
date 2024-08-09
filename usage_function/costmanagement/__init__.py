@@ -1,4 +1,5 @@
 """An Azure function to collect cost-management information."""
+
 import logging
 from datetime import datetime, timedelta
 from typing import Final

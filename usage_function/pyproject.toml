@@ -26,7 +26,6 @@ requests = "^2.31.0"
 rctab_models = { git = "https://github.com/alan-turing-institute/rctab-models", tag = "0.1.0" }
 
 [tool.poetry.group.dev.dependencies]
-black = "^24.4.2"
 coverage = "^7.5.1"
 flake8 = "^3.9.2"
 isort = "^5.13.2"
@@ -35,9 +34,6 @@ pre-commit = "^3.7.1"
 pylint = "^3.2.0"
 pylint-absolute-imports = "^1.1.0"
 types-requests = "^2.31.0.20240406"  # Should match requests version
-
-[tool.black]
-line-length = 88
 
 [build-system]
 requires = ["poetry-core"]

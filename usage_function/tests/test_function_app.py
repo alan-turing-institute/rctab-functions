@@ -1,4 +1,5 @@
 """Tests for Azure functions."""
+
 from datetime import date, datetime, timedelta
 from typing import Final
 from unittest import TestCase, main
