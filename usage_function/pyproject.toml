@@ -6,8 +6,8 @@ authors = []
 packages = [
     {include = "usage"},
     {include = "utils"},
-#    {include = "costmanagement"},
-#    {include = "monthly_usage"},
+    {include = "monthly_usage"},
+    #    {include = "costmanagement"},
 ]
 
 [tool.poetry.dependencies]
