@@ -1,4 +1,5 @@
 """Force our Azure function to run, regardless of the time."""
+
 import types
 
 from status import main
