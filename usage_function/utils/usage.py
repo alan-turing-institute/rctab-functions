@@ -194,11 +194,7 @@ def send_usage(
 
     # Note that omitting the encoding appears to work but will
     # fail server-side with some characters, such as en-dash.
-    data = (
-        models.AllUsage(usage_list=all_item_list)
-        .model_dump_json()
-        .encode("utf-8")
-    )
+    data = models.AllUsage(usage_list=all_item_list).model_dump_json().encode("utf-8")
 
     for _ in range(2):
         resp = requests.post(
