@@ -1,4 +1,5 @@
 """Configuration for the app."""
+
 from functools import lru_cache
 from typing import Optional
 
@@ -17,9 +18,9 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "WARNING"  # The log level
     CM_MGMT_GROUP: Optional[str] = None  # The cost management function mgmt group
     MGMT_GROUP: Optional[str] = None  # Either, the usage function mgmt group...
-    BILLING_ACCOUNT_ID: Optional[
-        str
-    ] = None  # ...or the usage function billing account ID
+    BILLING_ACCOUNT_ID: Optional[str] = (
+        None  # ...or the usage function billing account ID
+    )
     CENTRAL_LOGGING_CONNECTION_STRING: Optional[str] = None
 
     # Settings for the settings class itself.

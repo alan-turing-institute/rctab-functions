@@ -1,4 +1,5 @@
 """Utils for collecting and sending Azure usage data."""
+
 import logging
 from datetime import datetime, timedelta
 from functools import lru_cache
@@ -10,8 +11,8 @@ from azure.identity import DefaultAzureCredential
 from azure.mgmt.consumption import ConsumptionManagementClient
 from azure.mgmt.consumption.models import UsageDetailsListResult
 from pydantic_core import Url
+from rctab_models import models
 
-from utils import models
 from utils.auth import BearerAuth
 
 # We should only need one set of credentials
@@ -102,7 +103,9 @@ def combine_items(item_to_update: models.Usage, other_item: models.Usage) -> Non
     item_to_update.cost += other_item.cost
 
 
-def retrieve_usage(usage_data: Iterable[UsageDetailsListResult]) -> list[models.Usage]:
+def retrieve_usage(
+    usage_data: Iterable[UsageDetailsListResult],
+) -> list[models.Usage]:
     """Retrieve usage data from Azure.
 
     Args:

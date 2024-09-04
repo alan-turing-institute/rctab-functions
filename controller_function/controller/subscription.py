@@ -1,4 +1,5 @@
 """Manage subscription life cycle."""
+
 import logging
 from uuid import UUID
 

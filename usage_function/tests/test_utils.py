@@ -1,4 +1,5 @@
 """Tests for function app utils."""
+
 import logging
 from datetime import date, datetime, timedelta
 from typing import Final
@@ -9,8 +10,11 @@ from uuid import UUID
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from pydantic import HttpUrl, TypeAdapter
+from rctab_models import models
 
-import utils
+import utils.logutils
+import utils.settings
+import utils.usage
 
 HTTP_ADAPTER: Final = TypeAdapter(HttpUrl)
 
@@ -144,10 +148,10 @@ class TestUsageUtils(TestCase):
                             [example_usage_detail],  # type: ignore
                         )
 
-                    usage = utils.models.Usage(**usage_dict)
+                    usage = models.Usage(**usage_dict)
 
                     expected_data = (
-                        utils.models.AllUsage(usage_list=[usage])
+                        models.AllUsage(usage_list=[usage])
                         .model_dump_json()
                         .encode("utf-8")
                     )
@@ -178,10 +182,10 @@ class TestUsageUtils(TestCase):
                         [example_usage_detail],  # type: ignore
                     )
 
-                    usage = utils.usage.models.Usage(**usage_dict)
+                    usage = models.Usage(**usage_dict)
 
                     expected_data = (
-                        utils.usage.models.AllUsage(usage_list=[usage])
+                        models.AllUsage(usage_list=[usage])
                         .model_dump_json()
                         .encode("utf-8")
                     )
@@ -214,7 +218,7 @@ class TestUsageUtils(TestCase):
         datum_2.effective_price = 1
 
         actual = utils.usage.retrieve_usage((datum_1, datum_2))  # type: ignore
-        expected = utils.models.Usage(
+        expected = models.Usage(
             id="1",
             subscription_id=UUID(int=0),
             quantity=2,
@@ -277,28 +281,30 @@ class TestUsageUtils(TestCase):
 
     def test_combine_items(self) -> None:
         """Test that combine_items works as expected."""
-        existing_item = utils.models.Usage(
+        existing_item = models.Usage(
             id="someid",
             date=date.today(),
             cost=1,
+            total_cost=1,
             subscription_id=UUID(int=0),
         )
-        new_item = utils.models.Usage(
+        new_item = models.Usage(
             id="someid",
             date=date.today(),
             cost=1,
+            total_cost=1,
             subscription_id=UUID(int=0),
         )
 
         utils.usage.combine_items(existing_item, new_item)
-        expected = utils.models.Usage(
+        expected = models.Usage(
             id="someid",
             date=date.today(),
             quantity=0,
             effective_price=0,
             cost=2,
             amortised_cost=0,
-            total_cost=0,
+            total_cost=2,
             unit_price=0,
             subscription_id=UUID(int=0),
         )
