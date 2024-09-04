@@ -82,9 +82,7 @@ def get_all_usage(
     return data
 
 
-def combine_items(
-    item_to_update: models.Usage, other_item: models.Usage
-) -> None:
+def combine_items(item_to_update: models.Usage, other_item: models.Usage) -> None:
     """Update one Usage with the cost, etc. of another Usage."""
     item_to_update.quantity = (item_to_update.quantity or 0) + (
         other_item.quantity or 0
