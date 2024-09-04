@@ -105,7 +105,9 @@ def combine_items(
     item_to_update.cost += other_item.cost
 
 
-def retrieve_usage(usage_data: Iterable[UsageDetailsListResult]) -> list[models.Usage]:
+def retrieve_usage(
+    usage_data: Iterable[UsageDetailsListResult],
+) -> list[models.Usage]:
     """Retrieve usage data from Azure.
 
     Args:
