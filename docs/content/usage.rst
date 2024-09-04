@@ -4,10 +4,10 @@ Usage Function
 `usage` is an Azure function for deployment to an Azure Function App.
 It will get all the usage data in a management group or billing account and send it to an instance of the RCTab web server API.
 
+`monthly_usage` uses similar code as `usage` but runs on the 7th and 8th day of each month to get the previous month's usage.
+
 ..
     `costmanagement` is also an Azure function. It can be deployed to the same function app as the `usage` function.
-
-    `monthly_usage` uses similar code as `usage` but runs on the 7th day of each month to get the previous month's usage.
 
 Running Locally
 +++++++++++++++
