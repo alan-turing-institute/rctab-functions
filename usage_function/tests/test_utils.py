@@ -206,14 +206,12 @@ class TestUsageUtils(TestCase):
         datum_1 = DummyAzureUsage()
         datum_1.quantity = 1
         datum_1.cost = 1
-        datum_1.total_cost = 1
         datum_1.unit_price = 1
         datum_1.effective_price = 1
 
         datum_2 = DummyAzureUsage()
         datum_2.quantity = 1
         datum_2.cost = 1
-        datum_2.total_cost = 1
         datum_2.unit_price = 1
         datum_2.effective_price = 1
 

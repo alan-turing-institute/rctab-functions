@@ -123,12 +123,14 @@ def retrieve_usage(
         if i % 200 == 0:
             logging.warning("Requesting item %d", i)
 
-        usage_item = models.Usage(**vars(item))
+        item_dict = dict(vars(item))
 
         # When AmortizedCost metric is being used, the cost and effective_price values
         # for reserved instances are not zero, thus the cost value is moved to
         # amortised_cost
-        usage_item.total_cost = usage_item.cost
+        item_dict["total_cost"] = item_dict["cost"]
+
+        usage_item = models.Usage(**item_dict)
 
         if usage_item.reservation_id is not None:
             usage_item.amortised_cost = usage_item.cost
