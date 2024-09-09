@@ -3,7 +3,7 @@
     {
       "direction": "in",
       "name": "every_other_hour_on_7th_and_8th",
-      "schedule": "10 0,2,4,6,8,10,12,14,16,18,20,22 7,8 * *",
+      "schedule": "0 10 0,2,4,6,8,10,12,14,16,18,20,22 7,8 * *",
       "type": "timerTrigger"
     }
   ],
