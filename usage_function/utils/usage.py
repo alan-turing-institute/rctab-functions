@@ -100,8 +100,7 @@ def combine_items(item_to_update: models.Usage, other_item: models.Usage) -> Non
     item_to_update.unit_price = (item_to_update.unit_price or 0) + (
         other_item.unit_price or 0
     )
-
-    item_to_update.cost += other_item.cost
+    item_to_update.cost = (item_to_update.cost or 0) + (other_item.cost or 0)
 
 
 def combine_itemz(items: list[models.Usage]) -> list[models.Usage]:
@@ -118,7 +117,7 @@ def combine_itemz(items: list[models.Usage]) -> list[models.Usage]:
         "quantity",
     }
 
-    ret_list = []
+    ret_list: list[models.Usage] = []
     for item in items:
         curr_item_fields_dict = item.model_dump(exclude=combinable_fields)
 
@@ -129,11 +128,10 @@ def combine_itemz(items: list[models.Usage]) -> list[models.Usage]:
             if existing_fields_dict == curr_item_fields_dict:
                 # item can be combined.
                 match_found = True
+                combine_items(ret_list[idx], item)
                 break
 
-        if match_found:
-            combine_items(ret_list[idx], item)
-        else:
+        if not match_found:
             # insert item into ret_list
             ret_list.append(copy.deepcopy(item))
     return ret_list
