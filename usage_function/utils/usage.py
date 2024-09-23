@@ -103,6 +103,11 @@ def combine_items(item_to_update: models.Usage, other_item: models.Usage) -> Non
     item_to_update.cost += other_item.cost
 
 
+def combine_itemz(a):
+    """Sample docstring."""
+    pass
+
+
 def retrieve_usage(
     usage_data: Iterable[UsageDetailsListResult],
 ) -> list[models.Usage]:
@@ -116,7 +121,7 @@ def retrieve_usage(
     """
     logging.warning("Retrieve items")
 
-    all_items: Dict[str, models.Usage] = {}
+    all_items: Dict[str, list[models.Usage]] = {}
     started_processing_at = datetime.now()
 
     for i, item in enumerate(usage_data):
