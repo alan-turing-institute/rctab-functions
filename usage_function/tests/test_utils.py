@@ -308,6 +308,13 @@ class TestUsageUtils(TestCase):
         )
         self.assertEqual(expected, existing_item)
 
+
+class TestCombineItems(TestCase):
+    """Tests for the utils.usage.combine_itemz function."""
+
+    # todo: can we combine effective price?
+    # todo: warnable fields (ones we presume are the same but could not be).
+
     def test_combine_itemz_1(self) -> None:
         """Check that we sum the costs."""
         items_a = [
@@ -325,6 +332,22 @@ class TestUsageUtils(TestCase):
                 total_cost=1,
                 subscription_id=UUID(int=0),
             ),
+            models.Usage(
+                id="someid",
+                date=date.today(),
+                amortised_cost=1,
+                total_cost=1,
+                subscription_id=UUID(int=0),
+                reservation_id="somereservation",
+            ),
+            models.Usage(
+                id="someid",
+                date=date.today(),
+                amortised_cost=1,
+                total_cost=1,
+                subscription_id=UUID(int=0),
+                reservation_id="somereservation",
+            ),
         ]
 
         actual = utils.usage.combine_itemz(items_a)
@@ -336,6 +359,14 @@ class TestUsageUtils(TestCase):
                 cost=2,
                 total_cost=2,
                 subscription_id=UUID(int=0),
+            ),
+            models.Usage(
+                id="someid",
+                date=date.today(),
+                amortised_cost=2,
+                total_cost=2,
+                subscription_id=UUID(int=0),
+                reservation_id="somereservation",
             ),
         ]
         self.assertListEqual(expected, actual)

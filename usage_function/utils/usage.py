@@ -1,5 +1,6 @@
 """Utils for collecting and sending Azure usage data."""
 
+import copy
 import logging
 from datetime import datetime, timedelta
 from functools import lru_cache
@@ -103,9 +104,39 @@ def combine_items(item_to_update: models.Usage, other_item: models.Usage) -> Non
     item_to_update.cost += other_item.cost
 
 
-def combine_itemz(a):
-    """Sample docstring."""
-    pass
+def combine_itemz(items: list[models.Usage]) -> list[models.Usage]:
+    """Combine usage items.
+
+    If two or more usage items share all the same values,
+    ignoring cost, total_cost, amortised_cost, and quantity,
+    combine them into one item.
+    """
+    combinable_fields = {
+        "cost",
+        "amortised_cost",
+        "total_cost",
+        "quantity",
+    }
+
+    ret_list = []
+    for item in items:
+        curr_item_fields_dict = item.model_dump(exclude=combinable_fields)
+
+        match_found = False
+        for idx, ret_item in enumerate(ret_list):
+            existing_fields_dict = ret_item.model_dump(exclude=combinable_fields)
+
+            if existing_fields_dict == curr_item_fields_dict:
+                # item can be combined.
+                match_found = True
+                break
+
+        if match_found:
+            combine_items(ret_list[idx], item)
+        else:
+            # insert item into ret_list
+            ret_list.append(copy.deepcopy(item))
+    return ret_list
 
 
 def retrieve_usage(
