@@ -45,7 +45,7 @@ def get_dates() -> Union[None, Tuple[date], Tuple[date, date]]:
     return day1, day2
 
 
-def main(mytimer: func.TimerRequest) -> None:
+def main(every_other_hour_on_7th_and_8th: func.TimerRequest) -> None:
     """Collect usage information for the previous month."""
     # If incorrect settings have been given,
     # better to find out sooner rather than later.
@@ -60,7 +60,7 @@ def main(mytimer: func.TimerRequest) -> None:
     logger = logging.getLogger(__name__)
     logger.warning("Monthly usage function starting.")
 
-    if mytimer.past_due:
+    if every_other_hour_on_7th_and_8th.past_due:
         logger.info("The timer is past due.")
 
     dates = get_dates()
