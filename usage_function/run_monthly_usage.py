@@ -2,7 +2,7 @@
 
 import types
 
-from monthly_usage import main
+from monthlyusage import main
 
 if __name__ == "__main__":
     main(types.SimpleNamespace(past_due=True))

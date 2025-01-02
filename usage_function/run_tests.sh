@@ -44,7 +44,7 @@ status=$((status+$?))
 
 # Check types with MyPy
 echo "Running type checking..."
-python -m mypy --config-file tests/mypy.ini utils/ usage/ monthly_usage/ tests/
+python -m mypy --config-file tests/mypy.ini utils/ usage/ monthlyusage/ tests/
 status=$((status+$?))
 
 # [optional] Check Markdown coding style with Ruby's markdown lint

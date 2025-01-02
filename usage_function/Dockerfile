@@ -12,9 +12,9 @@ COPY usage/function.json /home/site/wwwroot/usage/
 RUN mkdir -p /home/site/wwwroot/utils
 COPY utils/*.py /home/site/wwwroot/utils/
 
-RUN mkdir -p /home/site/wwwroot/monthly_usage
-COPY monthly_usage/*.py /home/site/wwwroot/monthly_usage/
-COPY monthly_usage/function.json /home/site/wwwroot/monthly_usage/
+RUN mkdir -p /home/site/wwwroot/monthlyusage
+COPY monthlyusage/*.py /home/site/wwwroot/monthlyusage/
+COPY monthlyusage/function.json /home/site/wwwroot/monthlyusage/
 
 WORKDIR /home/site/wwwroot
 
