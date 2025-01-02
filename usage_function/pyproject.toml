@@ -6,12 +6,12 @@ authors = []
 packages = [
     {include = "usage"},
     {include = "utils"},
-    {include = "monthly_usage"},
+    {include = "monthlyusage"},
     #    {include = "costmanagement"},
 ]
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = "^3.12"
 azure-functions = "^1.19.0"
 azure-identity = "^1.16.0"
 azure-mgmt-consumption = "^10.0.0"
