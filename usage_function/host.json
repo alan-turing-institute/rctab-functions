@@ -1,5 +1,9 @@
 {
   "version": "2.0",
+  "functions": [
+    "usage",
+    "monthly_usage"
+  ],
   "logging": {
     "applicationInsights": {
       "samplingSettings": {
