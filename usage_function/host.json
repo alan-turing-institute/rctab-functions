@@ -12,6 +12,9 @@
     "id": "Microsoft.Azure.Functions.ExtensionBundle",
     "version": "[2.*, 3.0.0)"
   },
-  "functions": ["monthly_usage", "usage"],
+  "functions": [
+    "monthly_usage",
+    "usage"
+  ],
   "functionTimeout": "04:00:00"
 }
