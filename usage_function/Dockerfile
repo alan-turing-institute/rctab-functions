@@ -7,7 +7,6 @@ RUN curl -sSL https://install.python-poetry.org | python3 -
 
 RUN mkdir -p /home/site/wwwroot/usage
 COPY usage/*.py /home/site/wwwroot/usage/
-COPY usage/function.json /home/site/wwwroot/usage/
 
 RUN mkdir -p /home/site/wwwroot/utils
 COPY utils/*.py /home/site/wwwroot/utils/

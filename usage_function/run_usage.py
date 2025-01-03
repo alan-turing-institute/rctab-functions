@@ -2,7 +2,7 @@
 
 import types
 
-from usage import main
+from usage.function_app import main
 
 if __name__ == "__main__":
     main(types.SimpleNamespace(past_due=True))
