@@ -18,6 +18,6 @@ WORKDIR /home/site/wwwroot
 
 RUN ~/.local/share/pypoetry/venv/bin/poetry config virtualenvs.create false
 
-COPY pyproject.toml poetry.lock ./
+COPY pyproject.toml poetry.lock host.json ./
 
 RUN ~/.local/share/pypoetry/venv/bin/poetry install --only main

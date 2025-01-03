@@ -47,6 +47,7 @@ def get_dates() -> Union[None, Tuple[date], Tuple[date, date]]:
     return day1, day2
 
 
+@app.function_name(name="monthly_usage")
 @app.timer_trigger(
     schedule="0 10 */2 7,8 * *", arg_name="my_timer", run_on_startup=False
 )
