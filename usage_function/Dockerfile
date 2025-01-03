@@ -14,7 +14,6 @@ COPY utils/*.py /home/site/wwwroot/utils/
 
 RUN mkdir -p /home/site/wwwroot/monthly_usage
 COPY monthly_usage/*.py /home/site/wwwroot/monthly_usage/
-COPY monthly_usage/function.json /home/site/wwwroot/monthly_usage/
 
 WORKDIR /home/site/wwwroot
 

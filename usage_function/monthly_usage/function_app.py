@@ -14,6 +14,8 @@ from utils.usage import get_all_usage, retrieve_usage, send_usage
 
 MAX_ATTEMPTS = 5
 
+app = func.FunctionApp()
+
 
 def get_dates() -> Union[None, Tuple[date], Tuple[date, date]]:
     """Get up to two dates to process.
@@ -45,7 +47,10 @@ def get_dates() -> Union[None, Tuple[date], Tuple[date, date]]:
     return day1, day2
 
 
-def main(mytimer: func.TimerRequest) -> None:
+@app.timer_trigger(
+    schedule="0 10 */2 7,8 * *", arg_name="my_timer", run_on_startup=False
+)
+def main(my_timer: func.TimerRequest) -> None:
     """Collect usage information for the previous month."""
     # If incorrect settings have been given,
     # better to find out sooner rather than later.
