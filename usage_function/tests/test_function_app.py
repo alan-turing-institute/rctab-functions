@@ -31,15 +31,15 @@ class TestUsage(TestCase):
     """Tests for the usage/__init__.py file."""
 
     def test_main(self) -> None:
-        with patch("usage.get_all_usage") as mock_get_all_usage:
+        with patch("usage.function_app.get_all_usage") as mock_get_all_usage:
             mock_get_all_usage.return_value = ["usage1", "usage2"]
 
-            with patch("usage.datetime") as mock_datetime:
+            with patch("usage.function_app.datetime") as mock_datetime:
                 now = datetime.now()
                 mock_datetime.now.return_value = now
 
                 with patch(
-                    "usage.retrieve_and_send_usage"
+                    "usage.function_app.retrieve_and_send_usage"
                 ) as mock_retrieve_and_send_usage:
                     with patch("utils.settings.get_settings") as mock_get_settings:
                         mock_get_settings.return_value = utils.settings.Settings(
@@ -54,13 +54,13 @@ class TestUsage(TestCase):
                             _env_file=None,
                         )
 
-                        with patch("usage.date_range") as mock_date_range:
+                        with patch("usage.function_app.date_range") as mock_date_range:
                             mock_date_range.return_value = [33, 44]
 
                             mock_timer = MagicMock()
                             mock_timer.past_due = True
 
-                            usage.main(mock_timer)
+                            usage.function_app.main(mock_timer)
 
                             mock_date_range.assert_called_once_with(
                                 now - timedelta(days=2), now - timedelta(days=1)
