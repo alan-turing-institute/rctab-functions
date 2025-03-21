@@ -317,6 +317,9 @@ class TestCombineItems(TestCase):
 
     def test_combine_itemz_1(self) -> None:
         """Check that we sum the costs."""
+        # pylint: disable=invalid-name
+        self.maxDiff = None
+        # pylint: enable=invalid-name
         items_a = [
             models.Usage(
                 id="someid",
@@ -359,6 +362,10 @@ class TestCombineItems(TestCase):
                 cost=2,
                 total_cost=2,
                 subscription_id=UUID(int=0),
+                amortised_cost=0.0,
+                effective_price=0.0,
+                unit_price=0.0,
+                quantity=0,
             ),
             models.Usage(
                 id="someid",
@@ -367,6 +374,10 @@ class TestCombineItems(TestCase):
                 total_cost=2,
                 subscription_id=UUID(int=0),
                 reservation_id="somereservation",
+                cost=0.0,
+                effective_price=0.0,
+                unit_price=0.0,
+                quantity=0,
             ),
         ]
         self.assertListEqual(expected, actual)
