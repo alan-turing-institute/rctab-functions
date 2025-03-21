@@ -311,6 +311,7 @@ class TestUsageUtils(TestCase):
             total_cost=1,
             unit_price=1,
             effective_price=1,
+            amortised_cost=0.0,
         )
 
         self.assertListEqual([expected_item_1, expected_item_2], actual)

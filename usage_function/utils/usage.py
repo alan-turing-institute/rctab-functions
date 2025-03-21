@@ -4,7 +4,7 @@ import copy
 import logging
 from datetime import datetime, timedelta
 from functools import lru_cache
-from typing import Dict, Generator, Iterable, Optional
+from typing import Generator, Iterable, Optional
 from uuid import UUID
 
 import requests
@@ -150,7 +150,7 @@ def retrieve_usage(
     """
     logging.warning("Retrieve items")
 
-    all_items: Dict[str, list[models.Usage]] = {}
+    all_items: list[models.Usage] = []
     started_processing_at = datetime.now()
 
     for i, item in enumerate(usage_data):
@@ -172,22 +172,17 @@ def retrieve_usage(
         else:
             usage_item.amortised_cost = 0.0
 
-        if existing_item := all_items.get(usage_item.id):
-            # Add to the existing item
-            combine_items(existing_item, usage_item)
+        all_items.append(usage_item)
 
-        else:
-            all_items[usage_item.id] = usage_item
-
-    all_item_list = list(all_items.values())
+    combined_items = combine_itemz(all_items)
 
     logging.warning(
         "%d Usage objects retrieved in %s.",
-        len(all_item_list),
+        len(combined_items),
         datetime.now() - started_processing_at,
     )
 
-    return all_item_list
+    return combined_items
 
 
 def retrieve_and_send_usage(
