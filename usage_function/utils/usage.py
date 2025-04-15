@@ -1,9 +1,10 @@
 """Utils for collecting and sending Azure usage data."""
 
+import copy
 import logging
 from datetime import datetime, timedelta
 from functools import lru_cache
-from typing import Dict, Generator, Iterable, Optional
+from typing import Generator, Iterable, Optional
 from uuid import UUID
 
 import requests
@@ -99,8 +100,41 @@ def combine_items(item_to_update: models.Usage, other_item: models.Usage) -> Non
     item_to_update.unit_price = (item_to_update.unit_price or 0) + (
         other_item.unit_price or 0
     )
+    item_to_update.cost = (item_to_update.cost or 0) + (other_item.cost or 0)
 
-    item_to_update.cost += other_item.cost
+
+def compress_items(items: list[models.Usage]) -> list[models.Usage]:
+    """Compress a list of usage items into a single item by combining them.
+
+    If two or more usage items share all the same values,
+    ignoring cost, total_cost, amortised_cost, and quantity,
+    combine them into one item.
+    """
+    combinable_fields = {
+        "cost",
+        "amortised_cost",
+        "total_cost",
+        "quantity",
+    }
+
+    ret_list: list[models.Usage] = []
+    for item in items:
+        curr_item_fields_dict = item.model_dump(exclude=combinable_fields)
+
+        match_found = False
+        for idx, ret_item in enumerate(ret_list):
+            existing_fields_dict = ret_item.model_dump(exclude=combinable_fields)
+
+            if existing_fields_dict == curr_item_fields_dict:
+                # item can be combined.
+                match_found = True
+                combine_items(ret_list[idx], item)
+                break
+
+        if not match_found:
+            # insert item into ret_list
+            ret_list.append(copy.deepcopy(item))
+    return ret_list
 
 
 def retrieve_usage(
@@ -116,7 +150,7 @@ def retrieve_usage(
     """
     logging.warning("Retrieve items")
 
-    all_items: Dict[str, models.Usage] = {}
+    all_items: list[models.Usage] = []
     started_processing_at = datetime.now()
 
     for i, item in enumerate(usage_data):
@@ -138,22 +172,17 @@ def retrieve_usage(
         else:
             usage_item.amortised_cost = 0.0
 
-        if existing_item := all_items.get(usage_item.id):
-            # Add to the existing item
-            combine_items(existing_item, usage_item)
+        all_items.append(usage_item)
 
-        else:
-            all_items[usage_item.id] = usage_item
-
-    all_item_list = list(all_items.values())
+    combined_items = compress_items(all_items)
 
     logging.warning(
         "%d Usage objects retrieved in %s.",
-        len(all_item_list),
+        len(combined_items),
         datetime.now() - started_processing_at,
     )
 
-    return all_item_list
+    return combined_items
 
 
 def retrieve_and_send_usage(

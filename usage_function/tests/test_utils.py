@@ -266,6 +266,56 @@ class TestUsageUtils(TestCase):
         )
         self.assertListEqual([expected], actual)
 
+    def test_retrieve_usage_3(self) -> None:
+        """Check the retrieve usage function sets cost to 0."""
+        # pylint: disable=invalid-name
+        self.maxDiff = None
+        # pylint: enable=invalid-name
+
+        datum_1 = DummyAzureUsage()
+        datum_1.reservation_id = "x"
+        datum_1.quantity = 1
+        datum_1.cost = 1
+        datum_1.total_cost = 1
+        datum_1.unit_price = 1
+        datum_1.effective_price = 1
+
+        # an item without a reservation_id
+        datum_2 = DummyAzureUsage()
+        datum_2.quantity = 1
+        datum_2.cost = 1
+        datum_2.total_cost = 1
+        datum_2.unit_price = 1
+        datum_2.effective_price = 1
+
+        actual = utils.usage.retrieve_usage((datum_1, datum_2))  # type: ignore
+        expected_item_1 = utils.usage.models.Usage(
+            reservation_id="x",
+            id="1",
+            subscription_id=UUID(int=0),
+            quantity=1,
+            cost=0,
+            date=date.today(),
+            amortised_cost=1,
+            total_cost=1,
+            unit_price=1,
+            effective_price=1,
+        )
+        # without a reservation id: cost set to 1, amortise_dcost is unset.
+        expected_item_2 = utils.usage.models.Usage(
+            id="1",
+            subscription_id=UUID(int=0),
+            quantity=1,
+            cost=1,
+            date=date.today(),
+            total_cost=1,
+            unit_price=1,
+            effective_price=1,
+            amortised_cost=0.0,
+        )
+
+        self.assertListEqual([expected_item_1, expected_item_2], actual)
+
     def test_date_range(self) -> None:
         start = datetime(year=2021, month=11, day=1, hour=2)
         end = datetime(year=2021, month=11, day=2, hour=2)
@@ -307,6 +357,121 @@ class TestUsageUtils(TestCase):
             subscription_id=UUID(int=0),
         )
         self.assertEqual(expected, existing_item)
+
+
+class TestCompressItems(TestCase):
+    """Tests for the utils.usage.compress_items function."""
+
+    # todo: can we combine effective price?
+    # todo: warnable fields (ones we presume are the same but could not be).
+
+    def test_compress_items_1(self) -> None:
+        """Check that we sum the costs."""
+        # pylint: disable=invalid-name
+        self.maxDiff = None
+        # pylint: enable=invalid-name
+        items_a = [
+            models.Usage(
+                id="someid",
+                date=date.today(),
+                cost=1,
+                total_cost=1,
+                subscription_id=UUID(int=0),
+            ),
+            models.Usage(
+                id="someid",
+                date=date.today(),
+                cost=1,
+                total_cost=1,
+                subscription_id=UUID(int=0),
+            ),
+            models.Usage(
+                id="someid",
+                date=date.today(),
+                amortised_cost=1,
+                total_cost=1,
+                subscription_id=UUID(int=0),
+                reservation_id="somereservation",
+            ),
+            models.Usage(
+                id="someid",
+                date=date.today(),
+                amortised_cost=1,
+                total_cost=1,
+                subscription_id=UUID(int=0),
+                reservation_id="somereservation",
+            ),
+        ]
+
+        actual = utils.usage.compress_items(items_a)
+
+        expected = [
+            models.Usage(
+                id="someid",
+                date=date.today(),
+                cost=2,
+                total_cost=2,
+                subscription_id=UUID(int=0),
+                amortised_cost=0.0,
+                effective_price=0.0,
+                unit_price=0.0,
+                quantity=0,
+            ),
+            models.Usage(
+                id="someid",
+                date=date.today(),
+                amortised_cost=2,
+                total_cost=2,
+                subscription_id=UUID(int=0),
+                reservation_id="somereservation",
+                cost=0.0,
+                effective_price=0.0,
+                unit_price=0.0,
+                quantity=0,
+            ),
+        ]
+        self.assertListEqual(expected, actual)
+
+    def test_compress_items_2(self) -> None:
+        """Check that we sum the costs."""
+        items_a = [
+            models.Usage(
+                id="someid",
+                date=date.today(),
+                cost=1,
+                total_cost=1,
+                subscription_id=UUID(int=0),
+                reservation_id="somereservation",
+            ),
+            models.Usage(
+                id="someid",
+                date=date.today(),
+                cost=1,
+                total_cost=1,
+                subscription_id=UUID(int=0),
+            ),
+        ]
+
+        actual = utils.usage.compress_items(items_a)
+
+        expected = [
+            models.Usage(
+                id="someid",
+                date=date.today(),
+                cost=1,
+                total_cost=1,
+                subscription_id=UUID(int=0),
+                reservation_id="somereservation",
+            ),
+            models.Usage(
+                id="someid",
+                date=date.today(),
+                cost=1,
+                total_cost=1,
+                subscription_id=UUID(int=0),
+            ),
+        ]
+        self.assertListEqual(expected, actual)
 
 
 class TestSettings(TestCase):
