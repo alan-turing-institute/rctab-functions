@@ -103,8 +103,8 @@ def combine_items(item_to_update: models.Usage, other_item: models.Usage) -> Non
     item_to_update.cost = (item_to_update.cost or 0) + (other_item.cost or 0)
 
 
-def combine_itemz(items: list[models.Usage]) -> list[models.Usage]:
-    """Combine usage items.
+def compress_items(items: list[models.Usage]) -> list[models.Usage]:
+    """Compress a list of usage items into a single item by combining them.
 
     If two or more usage items share all the same values,
     ignoring cost, total_cost, amortised_cost, and quantity,
@@ -174,7 +174,7 @@ def retrieve_usage(
 
         all_items.append(usage_item)
 
-    combined_items = combine_itemz(all_items)
+    combined_items = compress_items(all_items)
 
     logging.warning(
         "%d Usage objects retrieved in %s.",

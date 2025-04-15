@@ -359,13 +359,13 @@ class TestUsageUtils(TestCase):
         self.assertEqual(expected, existing_item)
 
 
-class TestCombineItems(TestCase):
-    """Tests for the utils.usage.combine_itemz function."""
+class TestCompressItems(TestCase):
+    """Tests for the utils.usage.compress_items function."""
 
     # todo: can we combine effective price?
     # todo: warnable fields (ones we presume are the same but could not be).
 
-    def test_combine_itemz_1(self) -> None:
+    def test_compress_items_1(self) -> None:
         """Check that we sum the costs."""
         # pylint: disable=invalid-name
         self.maxDiff = None
@@ -403,7 +403,7 @@ class TestCombineItems(TestCase):
             ),
         ]
 
-        actual = utils.usage.combine_itemz(items_a)
+        actual = utils.usage.compress_items(items_a)
 
         expected = [
             models.Usage(
@@ -432,7 +432,7 @@ class TestCombineItems(TestCase):
         ]
         self.assertListEqual(expected, actual)
 
-    def test_combine_itemz_2(self) -> None:
+    def test_compress_items_2(self) -> None:
         """Check that we sum the costs."""
         items_a = [
             models.Usage(
@@ -452,7 +452,7 @@ class TestCombineItems(TestCase):
             ),
         ]
 
-        actual = utils.usage.combine_itemz(items_a)
+        actual = utils.usage.compress_items(items_a)
 
         expected = [
             models.Usage(
