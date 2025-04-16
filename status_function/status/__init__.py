@@ -3,6 +3,7 @@
 Attributes:
     CREDENTIALS: A set of credentials to use for authentication.
 """
+
 import asyncio
 import logging
 from datetime import datetime
@@ -16,6 +17,11 @@ from azure.identity import DefaultAzureCredential
 from azure.mgmt.authorization import AuthorizationManagementClient as AuthClient
 from azure.mgmt.subscription import SubscriptionClient
 from kiota_abstractions.api_error import APIError
+from msgraph.generated.models.directory_object_collection_response import (
+    DirectoryObjectCollectionResponse,
+)
+from msgraph.generated.models.service_principal import ServicePrincipal
+from msgraph.generated.models.user import User
 from msrestazure.azure_exceptions import CloudError  # todo
 from pydantic import HttpUrl
 from rctab_models import models
@@ -139,7 +145,7 @@ def get_auth_client(
     )
 
 
-def get_user_details(user: Any) -> dict[str, Any]:
+def get_principal_details(principal: Any) -> dict[str, Any]:
     """Get details of a service principal.
 
     Args:
@@ -151,31 +157,83 @@ def get_user_details(user: Any) -> dict[str, Any]:
     mail = None
     display_name = "Unknown"
 
-    if hasattr(user, "display_name"):
-        display_name = user.display_name
-    if hasattr(user, "mail"):
-        mail = user.mail
+    if hasattr(principal, "display_name"):
+        display_name = principal.display_name
+    if hasattr(principal, "mail"):
+        mail = principal.mail
     return {
         "display_name": display_name,
         "mail": mail,
     }
 
-@lru_cache(maxsize=500)
-def get_graph_user(user_id, client):
-    return asyncio.get_event_loop().run_until_complete(client.users.by_user_id(user_id).get())
 
 @lru_cache(maxsize=500)
-def get_graph_group_members(group_id, client):
-    return asyncio.get_event_loop().run_until_complete(client.groups.by_group_id(group_id).members.get())
+def get_graph_user(user_id: str, client: GraphServiceClient) -> User | None:
+    """Get a user from the graph client.
 
-@lru_cache(maxsize=500)
-def get_graph_service_principal(service_principal_id, client):
+    Args:
+        user_id: The user UUID id to get.
+        client: The graph client to use.
+
+    Returns:
+        The user object.
+    """
     try:
-        return asyncio.get_event_loop().run_until_complete(client.service_principals.by_service_principal_id(service_principal_id).get())
+        return asyncio.get_event_loop().run_until_complete(
+            client.users.by_user_id(user_id).get()
+        )
     except APIError as e:
-        logger.warning("Could not get service principal %s", service_principal_id)
         logger.warning(e)
         return None
+
+
+@lru_cache(maxsize=500)
+def get_graph_group_members(
+    group_id: str, client: GraphServiceClient
+) -> DirectoryObjectCollectionResponse | None:
+    """Get the members list for a group.
+
+    Args:
+        group_id: The UUID of the group.
+        client: The graph client to use.
+
+    Returns:
+        An object containing the members of the group in its value attribute.
+    """
+    try:
+        # Note that this is a paginated response and will only return the first 100 results.
+        return asyncio.get_event_loop().run_until_complete(
+            client.groups.by_group_id(group_id).members.get()
+        )
+    except APIError as e:
+        logger.warning(e)
+        return None
+
+
+@lru_cache(maxsize=500)
+def get_graph_service_principal(
+    service_principal_id: str, client: GraphServiceClient
+) -> ServicePrincipal | None:
+    """Get a user from the graph client.
+
+    Args:
+        service_principal_id: The UUID of the service principal.
+        client: The graph client to use.
+
+    Returns:
+        The service principal object.
+    """
+    try:
+        return asyncio.get_event_loop().run_until_complete(
+            client.service_principals.by_service_principal_id(
+                service_principal_id
+            ).get()
+        )
+    except APIError as e:
+        print("logger type:", type(logger), flush=True)
+        logger.warning(e)
+        return None
+
 
 def get_role_assignment_models(
     assignment: Any, role_name: str, graph_client: GraphServiceClient
@@ -193,16 +251,17 @@ def get_role_assignment_models(
     user_details = []
     if assignment.principal_type == "User":
         user = get_graph_user(assignment.principal_id, graph_client)
-        user_details.append(get_user_details(user))
+        user_details.append(get_principal_details(user))
     elif assignment.principal_type == "Group":
         group_members = get_graph_group_members(assignment.principal_id, graph_client)
-        user_details.extend([get_user_details(x) for x in group_members.value])
+        if group_members is not None:
+            user_details.extend([get_principal_details(x) for x in group_members.value])
     elif assignment.principal_type == "ServicePrincipal":
-        service_principal = get_graph_service_principal(assignment.principal_id, graph_client)
-        user_details.append(get_user_details(service_principal))
+        service_principal = get_graph_service_principal(
+            assignment.principal_id, graph_client
+        )
+        user_details.append(get_principal_details(service_principal))
     else:
-        pass
-        print("cell:", type(logger))
         logger.warning(
             "Did not recognise principal type %s",
             assignment.principal_type,
@@ -238,17 +297,11 @@ def get_subscription_role_assignment_models(
     assignments_list = get_role_assignments_list(auth_client)
     role_assignments_models = []
     for assignment in assignments_list:
-        try:
-                role_assignments_models += get_role_assignment_models(
-                assignment,
-                role_def_dict.get(assignment.role_definition_id, "Unknown"),
-                graph_client,
-            )
-        except CloudError as e:
-            logger.error(
-                "Could not retrieve role assignments. Do we have GraphAPI permissions?"
-            )
-            logger.error(e)
+        role_assignments_models += get_role_assignment_models(
+            assignment,
+            role_def_dict.get(assignment.role_definition_id, "Unknown"),
+            graph_client,
+        )
     return role_assignments_models
 
 
@@ -264,10 +317,8 @@ def get_all_status(tenant_id: UUID) -> list[models.SubscriptionStatus]:
     logger.warning("Getting all status data.")
     started_at = datetime.now()
 
-    scopes = ['https://graph.microsoft.com/.default']
-    graph_client = GraphServiceClient(
-        credentials=CREDENTIALS, scopes=scopes
-    )
+    scopes = ["https://graph.microsoft.com/.default"]
+    graph_client = GraphServiceClient(credentials=CREDENTIALS, scopes=scopes)
 
     client = SubscriptionClient(credential=CREDENTIALS)
     subscriptions = client.subscriptions.list()
@@ -277,11 +328,11 @@ def get_all_status(tenant_id: UUID) -> list[models.SubscriptionStatus]:
         if i % 10 == 0:
             logger.info("%s subscriptions processed.", i)
 
-        # if subscription.subscription_id != '4aea9c2f-9b6c-42e8-8b09-3594994fe238':
-        #     continue
         role_assignments_models = get_subscription_role_assignment_models(
             subscription, graph_client
         )
+
+        # todo this should be before the call to get subscriptions role assignments
         if (
             subscription.subscription_id is not None
             and subscription.display_name is not None
