@@ -8,8 +8,7 @@ import asyncio
 import logging
 from datetime import datetime
 from functools import lru_cache
-from typing import Any
-from uuid import UUID
+from typing import Any, Final
 
 import azure.functions as func
 import requests
@@ -17,20 +16,18 @@ from azure.identity import DefaultAzureCredential
 from azure.mgmt.authorization import AuthorizationManagementClient as AuthClient
 from azure.mgmt.subscription import SubscriptionClient
 from kiota_abstractions.api_error import APIError
+from msgraph import GraphServiceClient
 from msgraph.generated.models.directory_object_collection_response import (
     DirectoryObjectCollectionResponse,
 )
 from msgraph.generated.models.service_principal import ServicePrincipal
 from msgraph.generated.models.user import User
-from msrestazure.azure_exceptions import CloudError  # todo
 from pydantic import HttpUrl
 from rctab_models import models
 
-from msgraph import GraphServiceClient
 from status import settings
 from status.auth import BearerAuth
 from status.logutils import add_log_handler_once
-from status.wrapper import CredentialWrapper
 
 logging.basicConfig(
     level=logging.WARNING,
@@ -39,8 +36,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# We should only need one set of credentials.
-CREDENTIALS = DefaultAzureCredential()
+CREDENTIALS: Final = DefaultAzureCredential()
 
 
 def send_status(hostname_or_ip: HttpUrl, status_data: list) -> None:
@@ -199,7 +195,8 @@ def get_graph_group_members(
         An object containing the members of the group in its value attribute.
     """
     try:
-        # Note that this is a paginated response and will only return the first 100 results.
+        # Note that this is a paginated response,
+        # and will only return the first 100 results.
         return asyncio.get_event_loop().run_until_complete(
             client.groups.by_group_id(group_id).members.get()
         )
@@ -252,7 +249,7 @@ def get_role_assignment_models(
         user_details.append(get_principal_details(user))
     elif assignment.principal_type == "Group":
         group_members = get_graph_group_members(assignment.principal_id, graph_client)
-        if group_members is not None:
+        if group_members is not None and group_members.value is not None:
             user_details.extend([get_principal_details(x) for x in group_members.value])
     elif assignment.principal_type == "ServicePrincipal":
         service_principal = get_graph_service_principal(
@@ -303,11 +300,8 @@ def get_subscription_role_assignment_models(
     return role_assignments_models
 
 
-def get_all_status(tenant_id: UUID) -> list[models.SubscriptionStatus]:
+def get_all_status() -> list[models.SubscriptionStatus]:
     """Get status and role assignments for all subscriptions.
-
-    Args:
-        tenant_id: The tenant id to get status for.
 
     Returns:
         A list of SubscriptionStatus objects.
@@ -372,9 +366,9 @@ def main(mytimer: func.TimerRequest) -> None:
     if mytimer.past_due:
         logger.info("The timer is past due.")
 
-    status = get_all_status(config.AZURE_TENANT_ID)
+    status = get_all_status()
 
-    # send_status(config.API_URL, status)
+    send_status(config.API_URL, status)
     logger.warning(
         "Credential type used was: %s",
         type(CREDENTIALS._successful_credential),  # pylint: disable=W0212

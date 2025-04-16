@@ -6,15 +6,15 @@ from importlib import import_module
 from types import SimpleNamespace
 from typing import Final
 from unittest import TestCase, main
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import AsyncMock, MagicMock, call, patch
 from uuid import UUID
 
 import jwt
-from azure.graphrbac.models import ADGroup, ServicePrincipal
-from msgraph.generated.models.user import User
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
-from msrestazure.azure_exceptions import CloudError
+from msgraph import GraphServiceClient
+from msgraph.generated.models.service_principal import ServicePrincipal
+from msgraph.generated.models.user import User
 from pydantic import HttpUrl, TypeAdapter
 from rctab_models.models import RoleAssignment, SubscriptionState, SubscriptionStatus
 
@@ -32,9 +32,6 @@ EXPECTED_DICT: Final = {
     "mail": None,
     "principal_type": None,
 }
-
-# todo
-# msgraph.generated.models.user.User
 
 API_VERSION: Final = "2022-04-01"
 # e.g. v2022_04_01
@@ -61,7 +58,6 @@ class TestStatus(TestCase):
                         PRIVATE_KEY="-----BEGIN OPENSSH PRIVATE KEY-----"
                         "abcde"
                         "-----END OPENSSH PRIVATE KEY-----",
-                        AZURE_TENANT_ID=UUID(int=1000),
                     )
                     with patch("status.settings.get_settings") as mock_get_settings:
                         mock_get_settings.return_value = test_settings
@@ -89,7 +85,7 @@ class TestStatus(TestCase):
             subscription_id=UUID(int=1),
             display_name="sub1",
             state="Enabled",
-            role_assignments=[
+            role_assignments=(
                 RoleAssignment(
                     role_definition_id=str(UUID(int=10)),
                     role_name="Contributor",
@@ -97,8 +93,8 @@ class TestStatus(TestCase):
                     display_name="Joe Bloggs",
                     mail="jbloggs@mail.ac.uk",
                     scope="/",
-                )
-            ],
+                ),
+            ),
         )
 
         expected_data = (
@@ -156,16 +152,13 @@ class TestStatus(TestCase):
         expected = {
             "display_name": "john doe",
             "mail": "j.doe@mail.com",
-            "principal_type": User,
         }
         mock_user = MagicMock(spec=User)
         mock_user.display_name = "john doe"
         mock_user.mail = "j.doe@mail.com"
-        expected["principal_type"] = type(mock_user)
         actual = status.get_principal_details(mock_user)
         self.assertDictEqual(actual, expected)
 
-    # todo:
     def test_get_principal_details_service_principal(self) -> None:
         """test get_principal_details returns the expected dictionary
         of service principal information
@@ -173,233 +166,41 @@ class TestStatus(TestCase):
         expected = {
             "display_name": "some service",
             "mail": None,
-            "principal_type": ServicePrincipal,
         }
         mock_user = MagicMock(spec=ServicePrincipal)
         mock_user.display_name = "some service"
-        expected["principal_type"] = type(mock_user)
         actual = status.get_principal_details(mock_user)
         self.assertDictEqual(actual, expected)
 
-    def test_get_ad_group_principals(self) -> None:
-        """Test get_ad_group_principals populates the user details for members."""
-        expected = [
-            {
-                "display_name": f"person_{i}",
-                "mail": f"person_{i}@mail.com",
-                "principal_type": ADGroup,
-            }
-            for i in range(2)
-        ]
-        mock_users = [MagicMock(spec=User) for i in range(2)]
-        for index, item in enumerate(mock_users):
-            item.display_name = f"person_{index}"
-            item.mail = f"person_{index}@mail.com"
-        mock_ad_group = MagicMock(spec=ADGroup)
-        mock_ad_group.object_id = ""
-        for i in range(2):
-            expected[i].update({"principal_type": type(mock_ad_group)})
-        with patch("status.GraphRbacManagementClient") as mgc:
-            mgc.groups.get_group_members.return_value = (mu for mu in mock_users)
-            actual = status.get_ad_group_principals(mock_ad_group, mgc)
-            self.assertListEqual(actual, expected)
+    def test_get_graph_group_members(self) -> None:
+        """todo"""
 
-    def test_get_role_assignment_models__with_user(self) -> None:
-        """test get_role_assignment_models returns the expected result when
-        given a user
-        """
-        expected_values = {
-            "display_name": "john doe",
-            "mail": "j.doe@mail.com",
-            # "principal_type": User,
-        }
+    def test_get_graph_user(self) -> None:
+        """todo"""
 
-        expected_dict = EXPECTED_DICT.copy()
-        expected_dict.update(expected_values)
-
-        role_assignment = MODELS_MODULE.RoleAssignment(
-            role_definition_id=str(UUID(int=10)),
-            principal_id=str(UUID(int=100)),
-        )
-        role_assignment.scope = "/subscription_id/"
-        with patch("status.GraphRbacManagementClient") as mock_grmc:
-            expected = RoleAssignment(**expected_dict)
-            # with patch("status.get_principal") as mock_get_principal:
-            #     mock_get_principal.return_value = User()
-            with patch("status.get_principal_details") as mock_gpd:
-                mock_gpd.return_value = expected_values
-                actual = status.get_role_assignment_models(
-                    role_assignment,
-                    "contributor",
-                    mock_grmc,
-                )
-                self.assertListEqual([expected], actual)
-
-    def test_get_role_assignment_models__with_service_principal(self) -> None:
-        """test get_role_assignment_models returns the expected result when
-        given a service_principal
-        """
-        expected_values = {
-            "display_name": "some function",
-            "mail": None,
-            "principal_type": ServicePrincipal,
-        }
-        expected_dict = EXPECTED_DICT.copy()
-        role_assignment = MODELS_MODULE.RoleAssignment(
-            role_definition_id=str(UUID(int=10)),
-            principal_id=str(UUID(int=100)),
-        )
-        role_assignment.scope = "/subscription_id/"
-
-        with patch("status.GraphRbacManagementClient") as mock_grmc:
-            expected_dict.update(expected_values)
-            expected = RoleAssignment(**expected_dict)
-            with patch("status.get_principal") as mock_get_principal:
-                mock_get_principal.return_value = ServicePrincipal()
-                with patch("status.get_principal_details") as mock_spd:
-                    mock_spd.return_value = expected_values
-                    actual = status.get_role_assignment_models(
-                        role_assignment,
-                        "contributor",
-                        mock_grmc,
-                    )
-                    self.assertListEqual([expected], actual)
-
-    def test_get_role_assignment_models__with_adgroup(self) -> None:
-        """test get_role_assignment_models returns the expected result when
-        given an ADGroup
-        """
-        expected_values = [
-            {
-                "display_name": f"person_{i}",
-                "mail": f"person_{i}@mail.com",
-                "principal_type": ADGroup,
-            }
-            for i in range(2)
-        ]
-        expected_dict_list = [EXPECTED_DICT.copy(), EXPECTED_DICT.copy()]
-        for i in range(2):
-            expected_dict_list[i].update(expected_values[i])
-
-        role_assignment = MODELS_MODULE.RoleAssignment(
-            role_definition_id=str(UUID(int=10)),
-            principal_id=str(UUID(int=100)),
-        )
-        role_assignment.scope = "/subscription_id/"
-
-        with patch("status.GraphRbacManagementClient") as mock_grmc:
-            expected = [
-                RoleAssignment(**expected_dict) for expected_dict in expected_dict_list
-            ]
-            with patch("status.get_principal") as mock_get_principal:
-                mock_get_principal.return_value = ADGroup()
-                with patch("status.get_ad_group_principals") as mock_adgu:
-                    mock_adgu.return_value = expected_values
-                    actual = status.get_role_assignment_models(
-                        role_assignment,
-                        "contributor",
-                        mock_grmc,
-                    )
-                    self.assertListEqual(expected, actual)
-
-    def test_get_role_assignment_models__with_other_role_assignment(self) -> None:
-        """test get_role_assignment_models returns the expected result when
-        given something other than a User, ServicePrincipal or ADGroup
-        """
-        expected_dict = EXPECTED_DICT.copy()
-
-        role_assignment = MODELS_MODULE.RoleAssignment(
-            role_definition_id=str(UUID(int=10)),
-            principal_id=str(UUID(int=100)),
-        )
-        role_assignment.scope = "/subscription_id/"
-
-        with patch("status.GraphRbacManagementClient") as mock_grmc:
-            expected_dict.update({"mail": None})
-            expected = RoleAssignment(**expected_dict)
-            with patch("status.get_principal") as mock_get_principal:
-                mock_get_principal.return_value = SimpleNamespace()
-                actual = status.get_role_assignment_models(
-                    role_assignment,
-                    "contributor",
-                    mock_grmc,
-                )
-                self.assertListEqual([expected], actual)
+    def test_get_graph_service_principal(self) -> None:
+        """todo"""
 
     def test_get_role_assignment_models__no_principal(self) -> None:
         """test get_role_assignment_models can handle not finding a principal"""
-        with patch("status.logger") as mock_logger, patch(
-            "status.get_principal"
-        ) as mock_get_principal:
-            mock_get_principal.return_value = None
-            principal_id = str(UUID(int=100))
+        with patch("status.logger") as mock_logger:
+            principal_type = "Blah"
             role_assignment = MODELS_MODULE.RoleAssignment(
                 role_definition_id=str(UUID(int=10)),
                 role_name="Contributor",
-                principal_id=principal_id,
+                principal_id=str(UUID(int=100)),
+                principal_type="Blah",
             )
             role_assignment.scope = "/"
-            status.get_role_assignment_models(role_assignment, "somerole", None)
+            status.get_role_assignment_models(
+                role_assignment, "somerole", MagicMock(spec=GraphServiceClient)
+            )
         mock_logger.warning.assert_called_with(
-            "Could not retrieve principal data for principal id %s", principal_id
+            "Did not recognise principal type %s", principal_type
         )
 
-    def test_get_subscription_role_assignment_models__no_error(self) -> None:
-        """test get_subscription_role_assignment_models returns a list of
-        RoleAssignments"""
-        mock_subscription = MagicMock()
-        mock_subscription.subscription_id = str(UUID(int=1))
-        with patch("status.GraphRbacManagementClient") as mock_grmc:
-            with patch("status.get_auth_client") as mock_gac:
-                mock_gac.return_value = None
-                with patch("status.get_role_def_dict") as mock_grdd:
-                    mock_grdd.return_value = {str(UUID(int=10)): "contributor"}
-                    with patch("status.get_role_assignments_list") as mock_gral:
-                        role_assignment = MODELS_MODULE.RoleAssignment()
-                        role_assignment.scope = "/"
-                        mock_gral.return_value = [
-                            MODELS_MODULE.RoleAssignment(
-                                role_definition_id=str(UUID(int=10)),
-                                principal_id=str(UUID(int=100 + i)),
-                            )
-                            for i in range(3)
-                        ]
-                        for item in mock_gral.return_value:
-                            item.scope = "/"
-
-                        with patch("status.get_principal") as mock_principal:
-                            mock_principal.return_value = User(display_name="Unknown")
-                            actual = status.get_subscription_role_assignment_models(
-                                mock_subscription, mock_grmc
-                            )
-                            self.assertIsInstance(actual, list)
-                            self.assertEqual(len(actual), 3)
-                            for item in actual:
-                                self.assertIsInstance(item, RoleAssignment)
-
-    def test_get_subscription_role_assignment_models__cloud_error_returns_empty_list(
-        self,
-    ) -> None:
-        """test get_subscription_role_assignment_models returns an empty list when a
-        CloudError occurs
-        """
-        mock_subscription = MagicMock()
-        with patch("status.GraphRbacManagementClient") as mock_grmc:
-            with patch("status.get_auth_client") as mock_gac:
-                mock_gac.return_value = None
-                with patch("status.get_role_def_dict") as mock_grdd:
-                    mock_grdd.return_value = {str(UUID(int=10)): "contributor"}
-                    with patch("status.get_role_assignments_list") as mock_gral:
-                        mock_gral.assert_not_called()
-                        with patch("status.get_role_assignment_models") as mock_gram:
-                            mock_gram.side_effect = CloudError
-                            mock_gram.return_value = None
-                            actual = status.get_subscription_role_assignment_models(
-                                mock_subscription, mock_grmc
-                            )
-                            self.assertListEqual(actual, [])
-
     def test_get_all_status(self) -> None:
+        """Check get_all_status() works as intended."""
         with patch("status.SubscriptionClient") as mock_sub_client:
             mock_list_func = mock_sub_client.return_value.subscriptions.list
             mock_list_func.return_value = [
@@ -411,153 +212,34 @@ class TestStatus(TestCase):
             ]
 
             # Import the role assignments class from the specific API version.
-
             mock_role_assignments = MagicMock(
                 spec=OPERATIONS_MODULE.RoleAssignmentsOperations
             )
             with patch("status.AuthClient") as mock_auth_client:
                 mock_auth_client.return_value.role_assignments = mock_role_assignments
                 mock_assign_func = mock_role_assignments.list_for_subscription
-                role_assignment = MODELS_MODULE.RoleAssignment(
+                user_assignment = MODELS_MODULE.RoleAssignment(
                     role_definition_id=str(UUID(int=10)),
                     principal_id=str(UUID(int=100)),
                 )
-                role_assignment.scope = "/"
-                mock_assign_func.return_value = [role_assignment]
-
-                mock_defs_func = mock_auth_client.return_value.role_definitions.list
-                mock_defs_func.return_value = [
-                    SimpleNamespace(id=str(UUID(int=10)), role_name="Contributor")
-                ]
-
-                with patch("status.GetObjectsParameters") as mock_get_object_params:
-                    with patch("status.GraphRbacManagementClient") as mock_graph_client:
-                        mock_get_objects = (
-                            mock_graph_client.return_value.objects.get_objects_by_object_ids  # noqa pylint: disable=C0301
-                        )
-                        mock_get_objects.return_value = [
-                            User(display_name="Joe Bloggs", mail="jbloggs@mail.ac.uk")
-                        ]
-
-                        expected = [
-                            SubscriptionStatus(
-                                subscription_id=UUID(int=1),
-                                display_name="sub1",
-                                state="Enabled",
-                                role_assignments=[
-                                    RoleAssignment(
-                                        role_definition_id=str(UUID(int=10)),
-                                        role_name="Contributor",
-                                        principal_id=str(UUID(int=100)),
-                                        display_name="Joe Bloggs",
-                                        mail="jbloggs@mail.ac.uk",
-                                        scope="/",
-                                    )
-                                ],
-                            )
-                        ]
-
-                        actual = status.get_all_status(UUID(int=1000))
-                        self.assertListEqual(expected, actual)
-
-                        mock_graph_client.assert_called_with(
-                            credentials=status.GRAPH_CREDENTIALS,
-                            tenant_id=str(UUID(int=1000)),
-                        )
-
-                        mock_get_object_params.assert_called_with(
-                            include_directory_object_references=True,
-                            object_ids=[str(UUID(int=100))],
-                        )
-
-                        mock_auth_client.assert_called_with(
-                            credential=status.CREDENTIALS,
-                            subscription_id=str(UUID(int=1)),
-                            api_version=API_VERSION,
-                        )
-                        mock_defs_func.assert_called_with(
-                            scope="/subscriptions/" + str(UUID(int=1))
-                        )
-
-                    # test service principal
-                    with patch("status.GraphRbacManagementClient") as mock_graph_client:
-                        mock_get_objects = (
-                            mock_graph_client.return_value.objects.get_objects_by_object_ids  # noqa pylint: disable=C0301
-                        )
-                        mock_get_objects.return_value = [
-                            ServicePrincipal(display_name="Some Service")
-                        ]
-
-                        expected = [
-                            SubscriptionStatus(
-                                subscription_id=UUID(int=1),
-                                display_name="sub1",
-                                state="Enabled",
-                                role_assignments=[
-                                    RoleAssignment(
-                                        role_definition_id=str(UUID(int=10)),
-                                        role_name="Contributor",
-                                        principal_id=str(UUID(int=100)),
-                                        display_name="Some Service",
-                                        mail=None,
-                                        scope="/",
-                                    )
-                                ],
-                            )
-                        ]
-
-                        actual = status.get_all_status(UUID(int=1000))
-                        self.assertListEqual(expected, actual)
-
-                    with patch("status.GraphRbacManagementClient") as mock_graph_client:
-                        mock_get_objects = (
-                            mock_graph_client.return_value.objects.get_objects_by_object_ids  # noqa pylint: disable=C0301
-                        )
-                        mock_get_objects.return_value = [SimpleNamespace()]
-
-                        expected = [
-                            SubscriptionStatus(
-                                subscription_id=UUID(int=1),
-                                display_name="sub1",
-                                state="Enabled",
-                                role_assignments=[
-                                    RoleAssignment(
-                                        role_definition_id=str(UUID(int=10)),
-                                        role_name="Contributor",
-                                        principal_id=str(UUID(int=100)),
-                                        display_name="Unknown",
-                                        scope="/",
-                                        mail=None,
-                                    )
-                                ],
-                            )
-                        ]
-
-                        actual = status.get_all_status(UUID(int=1000))
-                        self.assertListEqual(expected, actual)
-
-    def test_get_all_status_error_handling(self) -> None:
-        # ToDo Could we make a patch() that incorporates these four patches?
-        with patch("status.SubscriptionClient") as mock_sub_client:
-            mock_list_func = mock_sub_client.return_value.subscriptions.list
-            mock_list_func.return_value = [
-                SimpleNamespace(
-                    subscription_id=str(UUID(int=1)),
-                    display_name="sub1",
-                    state="Enabled",
+                user_assignment.scope = "/"
+                user_assignment.principal_type = "User"
+                sp_assignment = MODELS_MODULE.RoleAssignment(
+                    role_definition_id=str(UUID(int=10)),
+                    principal_id=str(UUID(int=100)),
                 )
-            ]
-
-            with patch("status.AuthClient") as mock_auth_client:
-                mock_assign_func = mock_auth_client.return_value.role_assignments.list
+                sp_assignment.scope = "/"
+                sp_assignment.principal_type = "ServicePrincipal"
+                group_assignment = MODELS_MODULE.RoleAssignment(
+                    role_definition_id=str(UUID(int=10)),
+                    principal_id=str(UUID(int=100)),
+                )
+                group_assignment.scope = "/"
+                group_assignment.principal_type = "Group"
                 mock_assign_func.return_value = [
-                    SimpleNamespace(
-                        properties=SimpleNamespace(
-                            role_definition_id=str(UUID(int=10)),
-                            principal_id=str(UUID(int=100)),
-                            scope="/",
-                        )
-                    )
+                    user_assignment,
+                    sp_assignment,
+                    group_assignment,
                 ]
 
                 mock_defs_func = mock_auth_client.return_value.role_definitions.list
@@ -565,25 +247,77 @@ class TestStatus(TestCase):
                     SimpleNamespace(id=str(UUID(int=10)), role_name="Contributor")
                 ]
 
-                with patch("status.GetObjectsParameters"):
-                    with patch("status.GraphRbacManagementClient") as mock_graph_client:
-                        mock_objects = mock_graph_client.return_value.objects
-                        mock_objects.get_objects_by_object_ids.side_effect = CloudError(
-                            SimpleNamespace(status_code=403),
-                            error="Forbidden for url: https://graph.windows.net/...",
+                with patch("status.GraphServiceClient") as mock_graph_client:
+                    mock_get_user = mock_graph_client.return_value.users.by_user_id()
+                    mock_get_user.get = AsyncMock()
+                    mock_get_user.get.return_value = User(
+                        display_name="Joe Bloggs", mail="jbloggs@mail.ac.uk"
+                    )
+
+                    mock_sps = mock_graph_client.return_value.service_principals
+                    mock_get_sp = mock_sps.by_service_principal_id()
+                    mock_get_sp.get = AsyncMock()
+                    mock_get_sp.get.return_value = ServicePrincipal(
+                        display_name="SomeService",
+                    )
+
+                    mock_groups = mock_graph_client.return_value.groups
+                    mock_get_group_membs = mock_groups.by_group_id.return_value.members
+                    mock_get_group_membs.get = AsyncMock()
+                    mock_get_group_membs.get.return_value.value = [
+                        User(display_name="Joe Frogs", mail="jfrogs@mail.ac.uk")
+                    ]
+
+                    expected = [
+                        SubscriptionStatus(
+                            subscription_id=UUID(int=1),
+                            display_name="sub1",
+                            state=SubscriptionState.ENABLED,
+                            role_assignments=(
+                                RoleAssignment(
+                                    role_definition_id=str(UUID(int=10)),
+                                    role_name="Contributor",
+                                    principal_id=str(UUID(int=100)),
+                                    display_name="Joe Bloggs",
+                                    mail="jbloggs@mail.ac.uk",
+                                    scope="/",
+                                ),
+                                RoleAssignment(
+                                    role_definition_id=str(UUID(int=10)),
+                                    role_name="Contributor",
+                                    principal_id=str(UUID(int=100)),
+                                    display_name="SomeService",
+                                    mail=None,
+                                    scope="/",
+                                ),
+                                RoleAssignment(
+                                    role_definition_id=str(UUID(int=10)),
+                                    role_name="Contributor",
+                                    principal_id=str(UUID(int=100)),
+                                    display_name="Joe Frogs",
+                                    mail="jfrogs@mail.ac.uk",
+                                    scope="/",
+                                ),
+                            ),
                         )
+                    ]
 
-                        actual = status.get_all_status(UUID(int=1000))
-                        expected = [
-                            SubscriptionStatus(
-                                subscription_id=UUID(int=1),
-                                display_name="sub1",
-                                state=SubscriptionState("Enabled"),
-                                role_assignments=tuple(),
-                            )
-                        ]
+                    actual = status.get_all_status()
+                    self.assertListEqual(expected, actual)
 
-                        self.assertListEqual(expected, actual)
+                    mock_graph_client.assert_called_with(
+                        credentials=status.CREDENTIALS,
+                        scopes=["https://graph.microsoft.com/.default"],
+                    )
+
+                    mock_auth_client.assert_called_with(
+                        credential=status.CREDENTIALS,
+                        subscription_id=str(UUID(int=1)),
+                        api_version=API_VERSION,
+                    )
+                    mock_defs_func.assert_called_with(
+                        scope="/subscriptions/" + str(UUID(int=1))
+                    )
 
 
 class TestSettings(TestCase):
@@ -621,7 +355,6 @@ class TestSettings(TestCase):
             PRIVATE_KEY=private_key_str,
             API_URL="https://a.b.com",
             LOG_LEVEL="WARNING",
-            AZURE_TENANT_ID=UUID(int=9),
         )
 
 

@@ -2,7 +2,6 @@
 
 from functools import lru_cache
 from typing import Optional
-from uuid import UUID
 
 from pydantic import HttpUrl, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -22,7 +21,6 @@ class Settings(BaseSettings):
 
     API_URL: HttpUrl
     PRIVATE_KEY: str
-    AZURE_TENANT_ID: UUID  # Also used by the EnvironmentCredential
     LOG_LEVEL: str = "WARNING"
     CENTRAL_LOGGING_CONNECTION_STRING: Optional[str] = None
 

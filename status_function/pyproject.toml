@@ -10,17 +10,16 @@ packages = [
 [tool.poetry.dependencies]
 python = "^3.10"
 azure-functions = "^1.19.0"
-azure-graphrbac = "^0.61.1"
 azure-identity = "^1.16.0"
 azure-mgmt-authorization = "^4.0.0"
 azure-mgmt-subscription = "^3.1.1"
+msgraph-sdk = "^1.28.0"
 opencensus-ext-azure = "^1.1.13"
 pydantic = "^2.7.1"
 pydantic-settings = "^2.2.1"
 PyJWT = {extras = ["crypto"], version = "^2.8.0"}
 requests = "^2.31.0"
 rctab_models = { git = "https://github.com/alan-turing-institute/rctab-models", tag = "0.1.0" }
-msgraph-sdk = "^1.28.0"
 
 [tool.poetry.group.dev.dependencies]
 coverage = "^7.5.1"
