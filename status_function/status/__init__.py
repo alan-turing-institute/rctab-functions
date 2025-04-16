@@ -2,28 +2,25 @@
 
 Attributes:
     CREDENTIALS: A set of credentials to use for authentication.
-    GRAPH_CREDENTIALS: A set of credentials to use for authentication with the
-        Azure AD graph. See https://docs.microsoft.com/en-us/graph/auth-v2-service#4-get-an-access-token # noqa pylint: disable=C0301
-
 """
-
+import asyncio
 import logging
 from datetime import datetime
 from functools import lru_cache
-from typing import Any, Optional
+from typing import Any
 from uuid import UUID
 
 import azure.functions as func
 import requests
-from azure.graphrbac import GraphRbacManagementClient
-from azure.graphrbac.models import ADGroup, GetObjectsParameters
 from azure.identity import DefaultAzureCredential
 from azure.mgmt.authorization import AuthorizationManagementClient as AuthClient
 from azure.mgmt.subscription import SubscriptionClient
-from msrestazure.azure_exceptions import CloudError
+from kiota_abstractions.api_error import APIError
+from msrestazure.azure_exceptions import CloudError  # todo
 from pydantic import HttpUrl
 from rctab_models import models
 
+from msgraph import GraphServiceClient
 from status import settings
 from status.auth import BearerAuth
 from status.logutils import add_log_handler_once
@@ -37,14 +34,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # We should only need one set of credentials.
-CREDENTIALS = DefaultAzureCredential()
-
-# See
-# https://docs.microsoft.com/en-us/graph/auth-v2-service#4-get-an-access-token
-# for information about the URL to use here. graph.windows.net is for the Azure
-# AD graph, graph.microsoft.com would be for the Microsoft graph.
-GRAPH_CREDENTIALS = CredentialWrapper(
-    resource_id="https://graph.windows.net/.default",
+CREDENTIALS = DefaultAzureCredential(
+    # exclude_environment_credential=True
 )
 
 
@@ -148,30 +139,7 @@ def get_auth_client(
     )
 
 
-@lru_cache(maxsize=500)
-def get_principal(
-    principal_id: str, graph_client: GraphRbacManagementClient
-) -> Optional[list]:
-    """Get the service principal.
-
-    Args:
-        principal_id: The principal id.
-        graph_client: The graph client to check the principal.
-
-    Returns:
-        The principal if it exists, otherwise None.
-    """
-    params = GetObjectsParameters(
-        include_directory_object_references=True,
-        object_ids=[principal_id],
-    )
-    principal = list(graph_client.objects.get_objects_by_object_ids(params))
-    if principal:
-        return principal[0]
-    return None
-
-
-def get_principal_details(principal: Any) -> dict[str, Any]:
+def get_user_details(user: Any) -> dict[str, Any]:
     """Get details of a service principal.
 
     Args:
@@ -180,43 +148,37 @@ def get_principal_details(principal: Any) -> dict[str, Any]:
     Returns:
         A dictionary of principal details including type, display name and email.
     """
-    principal_type = type(principal)
     mail = None
     display_name = "Unknown"
-    if hasattr(principal, "display_name"):
-        display_name = principal.display_name
-    if hasattr(principal, "mail"):
-        mail = principal.mail
+
+    if hasattr(user, "display_name"):
+        display_name = user.display_name
+    if hasattr(user, "mail"):
+        mail = user.mail
     return {
-        "principal_type": principal_type,
         "display_name": display_name,
         "mail": mail,
     }
 
+@lru_cache(maxsize=500)
+def get_graph_user(user_id, client):
+    return asyncio.get_event_loop().run_until_complete(client.users.by_user_id(user_id).get())
 
-def get_ad_group_principals(
-    group: Any, graph_client: GraphRbacManagementClient
-) -> list:
-    """Get the members of a given AD group and extract their principal information.
+@lru_cache(maxsize=500)
+def get_graph_group_members(group_id, client):
+    return asyncio.get_event_loop().run_until_complete(client.groups.by_group_id(group_id).members.get())
 
-    Args:
-        group: The AD group to get members for.
-        graph_client: The graph client to check the principal.
-
-    Returns:
-        A list of principal details.
-    """
-    group_principal = list(graph_client.groups.get_group_members(group.object_id))
-    group_principal_details = []
-    for principal in group_principal:
-        principal_details = get_principal_details(principal)
-        principal_details["principal_type"] = type(group)
-        group_principal_details.append(principal_details)
-    return group_principal_details
-
+@lru_cache(maxsize=500)
+def get_graph_service_principal(service_principal_id, client):
+    try:
+        return asyncio.get_event_loop().run_until_complete(client.service_principals.by_service_principal_id(service_principal_id).get())
+    except APIError as e:
+        logger.warning("Could not get service principal %s", service_principal_id)
+        logger.warning(e)
+        return None
 
 def get_role_assignment_models(
-    assignment: Any, role_name: str, graph_client: GraphRbacManagementClient
+    assignment: Any, role_name: str, graph_client: GraphServiceClient
 ) -> list[models.RoleAssignment]:
     """Populate RoleAssignment objects with principal role details.
 
@@ -228,17 +190,22 @@ def get_role_assignment_models(
     Returns:
         A list of RoleAssignment objects.
     """
-    principal_details = []
-    principal = get_principal(assignment.principal_id, graph_client)
-    if principal:
-        if isinstance(principal, ADGroup):
-            principal_details.extend(get_ad_group_principals(principal, graph_client))
-        else:
-            principal_details.append(get_principal_details(principal))
+    user_details = []
+    if assignment.principal_type == "User":
+        user = get_graph_user(assignment.principal_id, graph_client)
+        user_details.append(get_user_details(user))
+    elif assignment.principal_type == "Group":
+        group_members = get_graph_group_members(assignment.principal_id, graph_client)
+        user_details.extend([get_user_details(x) for x in group_members.value])
+    elif assignment.principal_type == "ServicePrincipal":
+        service_principal = get_graph_service_principal(assignment.principal_id, graph_client)
+        user_details.append(get_user_details(service_principal))
     else:
+        pass
+        print("cell:", type(logger))
         logger.warning(
-            "Could not retrieve principal data for principal id %s",
-            assignment.principal_id,
+            "Did not recognise principal type %s",
+            assignment.principal_type,
         )
     return [
         models.RoleAssignment(
@@ -246,15 +213,16 @@ def get_role_assignment_models(
             role_name=role_name,
             principal_id=assignment.principal_id,
             scope=assignment.scope,
-            **x
+            display_name=x["display_name"],
+            mail=x["mail"],
         )
-        for x in principal_details
+        for x in user_details
     ]
 
 
 def get_subscription_role_assignment_models(
     subscription: Any,
-    graph_client: GraphRbacManagementClient,
+    graph_client: GraphServiceClient,
 ) -> list[models.RoleAssignment]:
     """Get the role assignment models for each a subscription.
 
@@ -268,20 +236,19 @@ def get_subscription_role_assignment_models(
     auth_client = get_auth_client(subscription)
     role_def_dict = get_role_def_dict(auth_client, subscription.subscription_id)
     assignments_list = get_role_assignments_list(auth_client)
-    try:
-        role_assignments_models = []
-        for assignment in assignments_list:
-            role_assignments_models += get_role_assignment_models(
+    role_assignments_models = []
+    for assignment in assignments_list:
+        try:
+                role_assignments_models += get_role_assignment_models(
                 assignment,
                 role_def_dict.get(assignment.role_definition_id, "Unknown"),
                 graph_client,
             )
-    except CloudError as e:
-        logger.error(
-            "Could not retrieve role assignments. Do we have GraphAPI permissions?"
-        )
-        logger.error(e)
-        role_assignments_models = []
+        except CloudError as e:
+            logger.error(
+                "Could not retrieve role assignments. Do we have GraphAPI permissions?"
+            )
+            logger.error(e)
     return role_assignments_models
 
 
@@ -297,8 +264,9 @@ def get_all_status(tenant_id: UUID) -> list[models.SubscriptionStatus]:
     logger.warning("Getting all status data.")
     started_at = datetime.now()
 
-    graph_client = GraphRbacManagementClient(
-        credentials=GRAPH_CREDENTIALS, tenant_id=str(tenant_id)
+    scopes = ['https://graph.microsoft.com/.default']
+    graph_client = GraphServiceClient(
+        credentials=CREDENTIALS, scopes=scopes
     )
 
     client = SubscriptionClient(credential=CREDENTIALS)
@@ -309,6 +277,8 @@ def get_all_status(tenant_id: UUID) -> list[models.SubscriptionStatus]:
         if i % 10 == 0:
             logger.info("%s subscriptions processed.", i)
 
+        # if subscription.subscription_id != '4aea9c2f-9b6c-42e8-8b09-3594994fe238':
+        #     continue
         role_assignments_models = get_subscription_role_assignment_models(
             subscription, graph_client
         )
@@ -356,7 +326,7 @@ def main(mytimer: func.TimerRequest) -> None:
 
     status = get_all_status(config.AZURE_TENANT_ID)
 
-    send_status(config.API_URL, status)
+    # send_status(config.API_URL, status)
     logger.warning(
         "Credential type used was: %s",
         type(CREDENTIALS._successful_credential),  # pylint: disable=W0212
