@@ -40,9 +40,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # We should only need one set of credentials.
-CREDENTIALS = DefaultAzureCredential(
-    # exclude_environment_credential=True
-)
+CREDENTIALS = DefaultAzureCredential()
 
 
 def send_status(hostname_or_ip: HttpUrl, status_data: list) -> None:
@@ -328,16 +326,15 @@ def get_all_status(tenant_id: UUID) -> list[models.SubscriptionStatus]:
         if i % 10 == 0:
             logger.info("%s subscriptions processed.", i)
 
-        role_assignments_models = get_subscription_role_assignment_models(
-            subscription, graph_client
-        )
-
-        # todo this should be before the call to get subscriptions role assignments
         if (
             subscription.subscription_id is not None
             and subscription.display_name is not None
             and subscription.state is not None
         ):
+            role_assignments_models = get_subscription_role_assignment_models(
+                subscription, graph_client
+            )
+
             data.append(
                 models.SubscriptionStatus(
                     subscription_id=subscription.subscription_id,
