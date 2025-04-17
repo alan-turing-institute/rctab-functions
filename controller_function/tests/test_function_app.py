@@ -43,6 +43,7 @@ class TestControllerModule(TestCase):
                             "-----END OPENSSH PRIVATE KEY-----"
                         ),
                         LOG_LEVEL="WARNING",
+                        _env_file=None,
                     )
                     with patch("controller.settings.get_settings") as mock_get_settings:
                         mock_get_settings.return_value = mock_settings
@@ -128,6 +129,7 @@ class TestSettings(TestCase):
             lambda: controller.settings.Settings(
                 API_URL="https://a.b.com",
                 PRIVATE_KEY="-----BEGIN OPENSSH PRIVATE KEY-----",
+                _env_file=None,
             ),
         )
 
@@ -136,6 +138,7 @@ class TestSettings(TestCase):
             lambda: controller.settings.Settings(
                 API_URL="https://a.b.com",
                 PRIVATE_KEY="-----END OPENSSH PRIVATE KEY-----",
+                _env_file=None,
             ),
         )
 
@@ -154,6 +157,7 @@ class TestSettings(TestCase):
             PRIVATE_KEY=private_key_str,
             API_URL="https://a.b.com",
             LOG_LEVEL="WARNING",
+            _env_file=None,
         )
 
 

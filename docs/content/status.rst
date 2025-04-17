@@ -69,4 +69,4 @@ Now that we have a service principal with the right graph permissions, we can
 #. Create a role on Azure with the `Microsoft.Authorization/roleAssignments/read` permission.
 #. Assign the service principal to the role from above over the management group of interest.
 #. [untested] Remove the Reader role assignment granted when the service principal was first created.
-#. We need to give the app some credentials so that it can authenticate as our new service principal. Take the `appId`, `tenant` and `password` values shown when the service principal was created, above, and set them as client ID, tenant ID and client secretPulumi config values, as described in the RCTab Infrastructure docs.
+#. We need to give the app some credentials so that it can authenticate as our new service principal. Take the `appId`, `tenant` and `password` values shown when the service principal was created, above, and set them as client ID, tenant ID and client secret Pulumi config values, as described in the RCTab Infrastructure docs.
