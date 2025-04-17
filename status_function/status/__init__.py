@@ -173,9 +173,15 @@ def get_graph_user(user_id: str, client: GraphServiceClient) -> User | None:
         The user object.
     """
     try:
-        return asyncio.get_event_loop().run_until_complete(
-            client.users.by_user_id(user_id).get()
-        )
+        # It seems as though Azure runs us in a thread and the default
+        # policy is for only the main thread to have a ready-made loop.
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+    try:
+        return loop.run_until_complete(client.users.by_user_id(user_id).get())
     except APIError as e:
         logger.warning(e)
         return None
@@ -195,9 +201,17 @@ def get_graph_group_members(
         An object containing the members of the group in its value attribute.
     """
     try:
+        # It seems as though Azure runs us in a thread and the default
+        # policy is for only the main thread to have a ready-made loop.
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+    try:
         # Note that this is a paginated response,
         # and will only return the first 100 results.
-        return asyncio.get_event_loop().run_until_complete(
+        return loop.run_until_complete(
             client.groups.by_group_id(group_id).members.get()
         )
     except APIError as e:
@@ -219,7 +233,15 @@ def get_graph_service_principal(
         The service principal object.
     """
     try:
-        return asyncio.get_event_loop().run_until_complete(
+        # It seems as though Azure runs us in a thread and the default
+        # policy is for only the main thread to have a ready-made loop.
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+    try:
+        return loop.run_until_complete(
             client.service_principals.by_service_principal_id(
                 service_principal_id
             ).get()
