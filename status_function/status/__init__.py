@@ -2,32 +2,32 @@
 
 Attributes:
     CREDENTIALS: A set of credentials to use for authentication.
-    GRAPH_CREDENTIALS: A set of credentials to use for authentication with the
-        Azure AD graph. See https://docs.microsoft.com/en-us/graph/auth-v2-service#4-get-an-access-token # noqa pylint: disable=C0301
-
 """
 
+import asyncio
 import logging
 from datetime import datetime
 from functools import lru_cache
-from typing import Any, Optional
-from uuid import UUID
+from typing import Any, Final
 
 import azure.functions as func
 import requests
-from azure.graphrbac import GraphRbacManagementClient
-from azure.graphrbac.models import ADGroup, GetObjectsParameters
 from azure.identity import DefaultAzureCredential
 from azure.mgmt.authorization import AuthorizationManagementClient as AuthClient
 from azure.mgmt.subscription import SubscriptionClient
-from msrestazure.azure_exceptions import CloudError
+from kiota_abstractions.api_error import APIError
+from msgraph import GraphServiceClient
+from msgraph.generated.models.directory_object_collection_response import (
+    DirectoryObjectCollectionResponse,
+)
+from msgraph.generated.models.service_principal import ServicePrincipal
+from msgraph.generated.models.user import User
 from pydantic import HttpUrl
 from rctab_models import models
 
 from status import settings
 from status.auth import BearerAuth
 from status.logutils import add_log_handler_once
-from status.wrapper import CredentialWrapper
 
 logging.basicConfig(
     level=logging.WARNING,
@@ -36,16 +36,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# We should only need one set of credentials.
-CREDENTIALS = DefaultAzureCredential()
-
-# See
-# https://docs.microsoft.com/en-us/graph/auth-v2-service#4-get-an-access-token
-# for information about the URL to use here. graph.windows.net is for the Azure
-# AD graph, graph.microsoft.com would be for the Microsoft graph.
-GRAPH_CREDENTIALS = CredentialWrapper(
-    resource_id="https://graph.windows.net/.default",
-)
+CREDENTIALS: Final = DefaultAzureCredential()
 
 
 def send_status(hostname_or_ip: HttpUrl, status_data: list) -> None:
@@ -148,29 +139,6 @@ def get_auth_client(
     )
 
 
-@lru_cache(maxsize=500)
-def get_principal(
-    principal_id: str, graph_client: GraphRbacManagementClient
-) -> Optional[list]:
-    """Get the service principal.
-
-    Args:
-        principal_id: The principal id.
-        graph_client: The graph client to check the principal.
-
-    Returns:
-        The principal if it exists, otherwise None.
-    """
-    params = GetObjectsParameters(
-        include_directory_object_references=True,
-        object_ids=[principal_id],
-    )
-    principal = list(graph_client.objects.get_objects_by_object_ids(params))
-    if principal:
-        return principal[0]
-    return None
-
-
 def get_principal_details(principal: Any) -> dict[str, Any]:
     """Get details of a service principal.
 
@@ -180,43 +148,112 @@ def get_principal_details(principal: Any) -> dict[str, Any]:
     Returns:
         A dictionary of principal details including type, display name and email.
     """
-    principal_type = type(principal)
     mail = None
     display_name = "Unknown"
+
     if hasattr(principal, "display_name"):
         display_name = principal.display_name
     if hasattr(principal, "mail"):
         mail = principal.mail
     return {
-        "principal_type": principal_type,
         "display_name": display_name,
         "mail": mail,
     }
 
 
-def get_ad_group_principals(
-    group: Any, graph_client: GraphRbacManagementClient
-) -> list:
-    """Get the members of a given AD group and extract their principal information.
+@lru_cache(maxsize=500)
+def get_graph_user(user_id: str, client: GraphServiceClient) -> User | None:
+    """Get a user from the graph client.
 
     Args:
-        group: The AD group to get members for.
-        graph_client: The graph client to check the principal.
+        user_id: The user UUID id to get.
+        client: The graph client to use.
 
     Returns:
-        A list of principal details.
+        The user object.
     """
-    group_principal = list(graph_client.groups.get_group_members(group.object_id))
-    group_principal_details = []
-    for principal in group_principal:
-        principal_details = get_principal_details(principal)
-        principal_details["principal_type"] = type(group)
-        group_principal_details.append(principal_details)
-    return group_principal_details
+    try:
+        # It seems as though Azure runs us in a thread and the default
+        # policy is for only the main thread to have a ready-made loop.
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+    try:
+        return loop.run_until_complete(client.users.by_user_id(user_id).get())
+    except APIError as e:
+        logger.warning(e)
+        return None
+
+
+@lru_cache(maxsize=500)
+def get_graph_group_members(
+    group_id: str, client: GraphServiceClient
+) -> DirectoryObjectCollectionResponse | None:
+    """Get the members list for a group.
+
+    Args:
+        group_id: The UUID of the group.
+        client: The graph client to use.
+
+    Returns:
+        An object containing the members of the group in its value attribute.
+    """
+    try:
+        # It seems as though Azure runs us in a thread and the default
+        # policy is for only the main thread to have a ready-made loop.
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+    try:
+        # Note that this is a paginated response,
+        # and will only return the first 100 results.
+        return loop.run_until_complete(
+            client.groups.by_group_id(group_id).members.get()
+        )
+    except APIError as e:
+        logger.warning(e)
+        return None
+
+
+@lru_cache(maxsize=500)
+def get_graph_service_principal(
+    service_principal_id: str, client: GraphServiceClient
+) -> ServicePrincipal | None:
+    """Get a user from the graph client.
+
+    Args:
+        service_principal_id: The UUID of the service principal.
+        client: The graph client to use.
+
+    Returns:
+        The service principal object.
+    """
+    try:
+        # It seems as though Azure runs us in a thread and the default
+        # policy is for only the main thread to have a ready-made loop.
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+    try:
+        return loop.run_until_complete(
+            client.service_principals.by_service_principal_id(
+                service_principal_id
+            ).get()
+        )
+    except APIError as e:
+        print("logger type:", type(logger), flush=True)
+        logger.warning(e)
+        return None
 
 
 def get_role_assignment_models(
-    assignment: Any, role_name: str, graph_client: GraphRbacManagementClient
+    assignment: Any, role_name: str, graph_client: GraphServiceClient
 ) -> list[models.RoleAssignment]:
     """Populate RoleAssignment objects with principal role details.
 
@@ -228,17 +265,23 @@ def get_role_assignment_models(
     Returns:
         A list of RoleAssignment objects.
     """
-    principal_details = []
-    principal = get_principal(assignment.principal_id, graph_client)
-    if principal:
-        if isinstance(principal, ADGroup):
-            principal_details.extend(get_ad_group_principals(principal, graph_client))
-        else:
-            principal_details.append(get_principal_details(principal))
+    user_details = []
+    if assignment.principal_type == "User":
+        user = get_graph_user(assignment.principal_id, graph_client)
+        user_details.append(get_principal_details(user))
+    elif assignment.principal_type == "Group":
+        group_members = get_graph_group_members(assignment.principal_id, graph_client)
+        if group_members is not None and group_members.value is not None:
+            user_details.extend([get_principal_details(x) for x in group_members.value])
+    elif assignment.principal_type == "ServicePrincipal":
+        service_principal = get_graph_service_principal(
+            assignment.principal_id, graph_client
+        )
+        user_details.append(get_principal_details(service_principal))
     else:
         logger.warning(
-            "Could not retrieve principal data for principal id %s",
-            assignment.principal_id,
+            "Did not recognise principal type %s",
+            assignment.principal_type,
         )
     return [
         models.RoleAssignment(
@@ -246,15 +289,16 @@ def get_role_assignment_models(
             role_name=role_name,
             principal_id=assignment.principal_id,
             scope=assignment.scope,
-            **x
+            display_name=x["display_name"],
+            mail=x["mail"],
         )
-        for x in principal_details
+        for x in user_details
     ]
 
 
 def get_subscription_role_assignment_models(
     subscription: Any,
-    graph_client: GraphRbacManagementClient,
+    graph_client: GraphServiceClient,
 ) -> list[models.RoleAssignment]:
     """Get the role assignment models for each a subscription.
 
@@ -268,28 +312,18 @@ def get_subscription_role_assignment_models(
     auth_client = get_auth_client(subscription)
     role_def_dict = get_role_def_dict(auth_client, subscription.subscription_id)
     assignments_list = get_role_assignments_list(auth_client)
-    try:
-        role_assignments_models = []
-        for assignment in assignments_list:
-            role_assignments_models += get_role_assignment_models(
-                assignment,
-                role_def_dict.get(assignment.role_definition_id, "Unknown"),
-                graph_client,
-            )
-    except CloudError as e:
-        logger.error(
-            "Could not retrieve role assignments. Do we have GraphAPI permissions?"
+    role_assignments_models = []
+    for assignment in assignments_list:
+        role_assignments_models += get_role_assignment_models(
+            assignment,
+            role_def_dict.get(assignment.role_definition_id, "Unknown"),
+            graph_client,
         )
-        logger.error(e)
-        role_assignments_models = []
     return role_assignments_models
 
 
-def get_all_status(tenant_id: UUID) -> list[models.SubscriptionStatus]:
+def get_all_status() -> list[models.SubscriptionStatus]:
     """Get status and role assignments for all subscriptions.
-
-    Args:
-        tenant_id: The tenant id to get status for.
 
     Returns:
         A list of SubscriptionStatus objects.
@@ -297,9 +331,8 @@ def get_all_status(tenant_id: UUID) -> list[models.SubscriptionStatus]:
     logger.warning("Getting all status data.")
     started_at = datetime.now()
 
-    graph_client = GraphRbacManagementClient(
-        credentials=GRAPH_CREDENTIALS, tenant_id=str(tenant_id)
-    )
+    scopes = ["https://graph.microsoft.com/.default"]
+    graph_client = GraphServiceClient(credentials=CREDENTIALS, scopes=scopes)
 
     client = SubscriptionClient(credential=CREDENTIALS)
     subscriptions = client.subscriptions.list()
@@ -309,14 +342,15 @@ def get_all_status(tenant_id: UUID) -> list[models.SubscriptionStatus]:
         if i % 10 == 0:
             logger.info("%s subscriptions processed.", i)
 
-        role_assignments_models = get_subscription_role_assignment_models(
-            subscription, graph_client
-        )
         if (
             subscription.subscription_id is not None
             and subscription.display_name is not None
             and subscription.state is not None
         ):
+            role_assignments_models = get_subscription_role_assignment_models(
+                subscription, graph_client
+            )
+
             data.append(
                 models.SubscriptionStatus(
                     subscription_id=subscription.subscription_id,
@@ -354,7 +388,7 @@ def main(mytimer: func.TimerRequest) -> None:
     if mytimer.past_due:
         logger.info("The timer is past due.")
 
-    status = get_all_status(config.AZURE_TENANT_ID)
+    status = get_all_status()
 
     send_status(config.API_URL, status)
     logger.warning(
