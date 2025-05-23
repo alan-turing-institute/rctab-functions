@@ -11,7 +11,7 @@ import requests
 from azure.identity import DefaultAzureCredential
 from azure.mgmt.consumption import ConsumptionManagementClient
 from azure.mgmt.consumption.models import UsageDetailsListResult
-from pydantic_core import Url
+from pydantic import HttpUrl
 from rctab_models import models
 
 from utils.auth import BearerAuth
@@ -186,7 +186,7 @@ def retrieve_usage(
 
 
 def retrieve_and_send_usage(
-    hostname_or_ip: Url, usage_data: Iterable[UsageDetailsListResult]
+    hostname_or_ip: HttpUrl, usage_data: Iterable[UsageDetailsListResult]
 ) -> None:
     """Retrieve usage data from Azure and send it to the API.
 
@@ -200,7 +200,7 @@ def retrieve_and_send_usage(
 
 
 def send_usage(
-    hostname_or_ip: Url,
+    hostname_or_ip: HttpUrl,
     all_item_list: list[models.Usage],
     monthly_usage_upload: bool = False,
 ) -> None:
