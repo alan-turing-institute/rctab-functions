@@ -32,7 +32,7 @@ def main(mytimer: func.TimerRequest) -> None:
     if mytimer.past_due:
         logger.info("The timer is past due.")
 
-    now = datetime.now()
+    now = datetime.now().replace(hour=0, microsecond=0, second=0, minute=0)
     start_datetime = (
         now
         - timedelta(days=config.USAGE_HISTORY_DAYS - 1)
@@ -58,7 +58,12 @@ def main(mytimer: func.TimerRequest) -> None:
             )
 
             try:
-                retrieve_and_send_usage(config.API_URL, usage)
+                retrieve_and_send_usage(
+                    config.API_URL,
+                    usage,
+                    start_datetime.date(),
+                    end_datetime.date(),
+                )
                 break
             except HttpResponseError as e:
                 logger.error("Request to azure failed. Trying again in 60 seconds")

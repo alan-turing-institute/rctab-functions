@@ -98,7 +98,13 @@ def main(mytimer: func.TimerRequest) -> None:
                 usage_item.monthly_upload = today
 
             logger.warning("Sending usage for %s", dates)
-            send_usage(config.API_URL, usage_items, monthly_usage_upload=True)
+            send_usage(
+                config.API_URL,
+                usage_items,
+                date_from,
+                date_to,
+                monthly_usage_upload=True,
+            )
 
             logger.warning("Monthly usage function finished.")
             return
