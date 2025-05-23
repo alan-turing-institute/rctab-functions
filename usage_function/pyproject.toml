@@ -27,11 +27,10 @@ rctab_models = { git = "https://github.com/alan-turing-institute/rctab-models", 
 
 [tool.poetry.group.dev.dependencies]
 coverage = "^7.5.1"
-flake8 = "^3.9.2"
 isort = "^5.13.2"
 mypy = "^1.15.0"
 pre-commit = "^3.7.1"
-pylint = "^3.2.0"
+pylint = "^3.3.7"
 pylint-absolute-imports = "^1.1.0"
 types-requests = "^2.31.0.20240406"  # Should match requests version
 

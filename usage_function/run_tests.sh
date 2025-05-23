@@ -9,18 +9,10 @@ status=0
 # shellcheck disable=SC1091
 source .venv/bin/activate
 
-# Check Python coding style with flake8, using black's default max line length
-# To auto-format a file, you can run `python -m black filename.py`
-echo "Running flake8..."
-python -m flake8 --max-line-length=88 --exclude=.venv,venv
-status=$((status+$?))
-
-
 # Run here rather than as a pre-commit hook so that local imports happen last
 echo "Running isort..."
 isort . --profile=black
 status=$((status+$?))
-
 
 # Find all .py files (ignoring .venv or venv directories) and check their
 # code style with pylint, using (something close to) Google's default config

@@ -135,23 +135,32 @@ class TestUsageUtils(TestCase):
         )
 
         with patch("utils.usage.BearerAuth") as mock_auth:
+            # Patch POST so that it returns an error (300 status code).
             with patch("requests.post") as mock_post:
                 mock_response = MagicMock()
                 mock_response.status_code = 300
                 mock_response.text = "some-mock-text"
                 mock_post.return_value = mock_response
 
+                sept_2021 = date(2021, 9, 1)
+
                 with patch("utils.usage.logging.warning") as mock_log:
                     with self.assertRaises(RuntimeError):
                         utils.usage.retrieve_and_send_usage(
                             HTTP_ADAPTER.validate_python("https://123.123.123.123"),
                             [example_usage_detail],  # type: ignore
+                            sept_2021,
+                            sept_2021,
                         )
 
                     usage = models.Usage(**usage_dict)
 
                     expected_data = (
-                        models.AllUsage(usage_list=[usage])
+                        models.AllUsage(
+                            usage_list=[usage],
+                            start_date=sept_2021,
+                            end_date=sept_2021,
+                        )
                         .model_dump_json()
                         .encode("utf-8")
                     )
@@ -171,6 +180,7 @@ class TestUsageUtils(TestCase):
                         "some-mock-text",
                     )
 
+            # Patch POST so that it returns a success (200 status code).
             with patch("requests.post") as mock_post:
                 mock_response = MagicMock()
                 mock_response.status_code = 200
@@ -180,12 +190,18 @@ class TestUsageUtils(TestCase):
                     utils.usage.retrieve_and_send_usage(
                         HTTP_ADAPTER.validate_python("https://123.123.123.123"),
                         [example_usage_detail],  # type: ignore
+                        sept_2021,
+                        sept_2021,
                     )
 
                     usage = models.Usage(**usage_dict)
 
                     expected_data = (
-                        models.AllUsage(usage_list=[usage])
+                        models.AllUsage(
+                            usage_list=[usage],
+                            start_date=sept_2021,
+                            end_date=sept_2021,
+                        )
                         .model_dump_json()
                         .encode("utf-8")
                     )

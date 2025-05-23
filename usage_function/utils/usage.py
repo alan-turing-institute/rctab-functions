@@ -2,7 +2,7 @@
 
 import copy
 import logging
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from functools import lru_cache
 from typing import Generator, Iterable, Optional
 from uuid import UUID
@@ -186,22 +186,29 @@ def retrieve_usage(
 
 
 def retrieve_and_send_usage(
-    hostname_or_ip: HttpUrl, usage_data: Iterable[UsageDetailsListResult]
+    hostname_or_ip: HttpUrl,
+    usage_data: Iterable[UsageDetailsListResult],
+    start_date: date,
+    end_date: date,
 ) -> None:
     """Retrieve usage data from Azure and send it to the API.
 
     Args:
         hostname_or_ip: Hostname or IP of the API.
         usage_data: Usage data object.
+        start_date: The start of the date range that has been collected.
+        end_date: The inclusive end of the date range that has been collected.
     """
     usage_list = retrieve_usage(usage_data)
 
-    send_usage(hostname_or_ip, usage_list)
+    send_usage(hostname_or_ip, usage_list, start_date, end_date)
 
 
 def send_usage(
     hostname_or_ip: HttpUrl,
     all_item_list: list[models.Usage],
+    start_date: date,
+    end_date: date,
     monthly_usage_upload: bool = False,
 ) -> None:
     """Post each item of usage_data to a route."""
@@ -221,7 +228,13 @@ def send_usage(
 
     # Note that omitting the encoding appears to work but will
     # fail server-side with some characters, such as en-dash.
-    data = models.AllUsage(usage_list=all_item_list).model_dump_json().encode("utf-8")
+    data = (
+        models.AllUsage(
+            usage_list=all_item_list, start_date=start_date, end_date=end_date
+        )
+        .model_dump_json()
+        .encode("utf-8")
+    )
 
     for _ in range(2):
         resp = requests.post(

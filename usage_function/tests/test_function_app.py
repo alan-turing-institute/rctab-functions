@@ -35,7 +35,7 @@ class TestUsage(TestCase):
             mock_get_all_usage.return_value = ["usage1", "usage2"]
 
             with patch("usage.datetime") as mock_datetime:
-                now = datetime.now()
+                now = datetime(year=2022, month=7, day=10)
                 mock_datetime.now.return_value = now
 
                 with patch(
@@ -61,9 +61,11 @@ class TestUsage(TestCase):
                             mock_timer.past_due = True
 
                             usage.main(mock_timer)
+                            start_datetime = datetime(2022, 7, 8)
+                            end_datetime = datetime(2022, 7, 9)
 
                             mock_date_range.assert_called_once_with(
-                                now - timedelta(days=2), now - timedelta(days=1)
+                                start_datetime, end_datetime
                             )
 
                         mock_get_all_usage.assert_has_calls(
@@ -87,6 +89,8 @@ class TestUsage(TestCase):
                                 call(
                                     HTTP_ADAPTER.validate_python("https://my.host"),
                                     ["usage1", "usage2"],
+                                    start_datetime.date(),
+                                    end_datetime.date(),
                                 ),
                             ]
                         )
