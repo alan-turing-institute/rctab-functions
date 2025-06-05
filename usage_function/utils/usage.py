@@ -52,6 +52,9 @@ def get_all_usage(
         credential=CREDENTIALS, subscription_id=str(UUID(int=0))
     )
 
+    # Note that the data we get back seems to ignore the time part
+    # and requesting data between 2023-01-01T00:00:00Z and 2023-01-01T00:00:00Z
+    # will return data for the whole of 2023-01-01.
     filter_from = "properties/usageEnd ge '{}'".format(
         start_time.strftime("%Y-%m-%dT%H:%M:%SZ")
     )
