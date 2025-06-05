@@ -61,8 +61,8 @@ def main(mytimer: func.TimerRequest) -> None:
                 retrieve_and_send_usage(
                     config.API_URL,
                     usage,
-                    start_datetime.date(),
-                    end_datetime.date(),
+                    usage_date,
+                    usage_date,
                 )
                 break
             except HttpResponseError as e:

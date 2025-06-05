@@ -35,7 +35,7 @@ class TestUsage(TestCase):
             mock_get_all_usage.return_value = ["usage1", "usage2"]
 
             with patch("usage.datetime") as mock_datetime:
-                now = datetime(year=2022, month=7, day=10)
+                now = datetime(year=2022, month=7, day=10, hour=10, minute=5, second=2)
                 mock_datetime.now.return_value = now
 
                 with patch(
@@ -54,31 +54,29 @@ class TestUsage(TestCase):
                             _env_file=None,
                         )
 
-                        with patch("usage.date_range") as mock_date_range:
-                            mock_date_range.return_value = [33, 44]
+                        mock_timer = MagicMock()
+                        mock_timer.past_due = True
 
-                            mock_timer = MagicMock()
-                            mock_timer.past_due = True
+                        usage.main(mock_timer)
 
-                            usage.main(mock_timer)
-                            start_datetime = datetime(2022, 7, 8)
-                            end_datetime = datetime(2022, 7, 9)
-
-                            mock_date_range.assert_called_once_with(
-                                start_datetime, end_datetime
-                            )
+                        eighth = datetime(
+                            year=2022, month=7, day=8, hour=0, minute=0, second=0
+                        )
+                        ninth = datetime(
+                            year=2022, month=7, day=9, hour=0, minute=0, second=0
+                        )
 
                         mock_get_all_usage.assert_has_calls(
                             [
                                 call(
-                                    44,
-                                    44,
+                                    ninth,
+                                    ninth,
                                     billing_account_id=None,
                                     mgmt_group="mgmt-group",
                                 ),
                                 call(
-                                    33,
-                                    33,
+                                    eighth,
+                                    eighth,
                                     billing_account_id=None,
                                     mgmt_group="mgmt-group",
                                 ),
@@ -89,8 +87,14 @@ class TestUsage(TestCase):
                                 call(
                                     HTTP_ADAPTER.validate_python("https://my.host"),
                                     ["usage1", "usage2"],
-                                    start_datetime.date(),
-                                    end_datetime.date(),
+                                    ninth,
+                                    ninth,
+                                ),
+                                call(
+                                    HTTP_ADAPTER.validate_python("https://my.host"),
+                                    ["usage1", "usage2"],
+                                    eighth,
+                                    eighth,
                                 ),
                             ]
                         )
