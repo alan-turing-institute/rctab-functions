@@ -55,7 +55,10 @@ class TestUsage(TestCase):
                         )
 
                         with patch("usage.date_range") as mock_date_range:
-                            mock_date_range.return_value = [33, 44]
+                            mock_date_range.return_value = [
+                                "mock-date-1",
+                                "mock-date-2",
+                            ]
 
                             mock_timer = MagicMock()
                             mock_timer.past_due = True
@@ -71,14 +74,14 @@ class TestUsage(TestCase):
                         mock_get_all_usage.assert_has_calls(
                             [
                                 call(
-                                    44,
-                                    44,
+                                    "mock-date-2",
+                                    "mock-date-2",
                                     billing_account_id=None,
                                     mgmt_group="mgmt-group",
                                 ),
                                 call(
-                                    33,
-                                    33,
+                                    "mock-date-1",
+                                    "mock-date-1",
                                     billing_account_id=None,
                                     mgmt_group="mgmt-group",
                                 ),
@@ -89,8 +92,14 @@ class TestUsage(TestCase):
                                 call(
                                     HTTP_ADAPTER.validate_python("https://my.host"),
                                     ["usage1", "usage2"],
-                                    start_datetime.date(),
-                                    end_datetime.date(),
+                                    "mock-date-2",
+                                    "mock-date-2",
+                                ),
+                                call(
+                                    HTTP_ADAPTER.validate_python("https://my.host"),
+                                    ["usage1", "usage2"],
+                                    "mock-date-1",
+                                    "mock-date-1",
                                 ),
                             ]
                         )
