@@ -7,6 +7,7 @@ from unittest import TestCase, main
 from unittest.mock import MagicMock, call, patch
 from uuid import UUID
 
+from azure.mgmt.consumption.models import ModernUsageDetail
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from pydantic import HttpUrl, TypeAdapter
@@ -331,6 +332,44 @@ class TestUsageUtils(TestCase):
         )
 
         self.assertListEqual([expected_item_1, expected_item_2], actual)
+
+    def test_retrieve_usage_modern_usage_detail(self) -> None:
+        """Check retrieve_usage can handle modern usage detail objects."""
+        modern_usage_1 = ModernUsageDetail()
+        modern_usage_1.id = "1"
+        modern_usage_1.subscription_guid = str(UUID(int=0))
+        modern_usage_1.date = date.today()
+        modern_usage_1.quantity = 1
+        modern_usage_1.cost_in_billing_currency = 1
+        modern_usage_1.unit_price = 1
+        modern_usage_1.effective_price = 1
+        modern_usage_1.billing_currency_code = "GBP"
+
+        modern_usage_2 = ModernUsageDetail()
+        modern_usage_2.id = "1"
+        modern_usage_2.subscription_guid = str(UUID(int=0))
+        modern_usage_2.date = date.today()
+        modern_usage_2.quantity = 1
+        modern_usage_2.cost_in_billing_currency = 1
+        modern_usage_2.unit_price = 1
+        modern_usage_2.effective_price = 1
+        modern_usage_2.billing_currency_code = "GBP"
+
+        actual = utils.usage.retrieve_usage([modern_usage_1, modern_usage_2])  # type: ignore[arg-type]
+        expected = models.Usage(
+            id="1",
+            subscription_id=UUID(int=0),
+            quantity=2,
+            cost=2,
+            date=date.today(),
+            amortised_cost=0,
+            total_cost=2,
+            unit_price=2,
+            effective_price=2,
+            billing_currency="GBP",
+        )
+
+        self.assertListEqual([expected], actual)
 
     def test_date_range(self) -> None:
         start = datetime(year=2021, month=11, day=1, hour=2)

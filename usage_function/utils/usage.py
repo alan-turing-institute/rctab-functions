@@ -10,7 +10,7 @@ from uuid import UUID
 import requests
 from azure.identity import DefaultAzureCredential
 from azure.mgmt.consumption import ConsumptionManagementClient
-from azure.mgmt.consumption.models import UsageDetailsListResult
+from azure.mgmt.consumption.models import UsageDetailsListResult, UsageDetail
 from pydantic import HttpUrl
 from rctab_models import models
 
@@ -140,6 +140,26 @@ def compress_items(items: list[models.Usage]) -> list[models.Usage]:
     return ret_list
 
 
+def usage_detail_to_usage_model(detail: UsageDetail) -> models.Usage:
+    """Convert a Legacy or Modern UsageDetail to a Usage model."""
+    item_dict = dict(vars(detail))
+
+    # When AmortizedCost metric is being used, the cost and effective_price values
+    # for reserved instances are not zero, thus the cost value is moved to
+    # amortised_cost
+    item_dict["total_cost"] = item_dict["cost"]
+
+    usage_item = models.Usage(**item_dict)
+
+    if usage_item.reservation_id is not None:
+        usage_item.amortised_cost = usage_item.cost
+        usage_item.cost = 0.0
+    else:
+        usage_item.amortised_cost = 0.0
+
+    return usage_item
+
+
 def retrieve_usage(
     usage_data: Iterable[UsageDetailsListResult],
 ) -> list[models.Usage]:
@@ -160,22 +180,7 @@ def retrieve_usage(
         if i % 200 == 0:
             logging.warning("Requesting item %d", i)
 
-        item_dict = dict(vars(item))
-
-        # When AmortizedCost metric is being used, the cost and effective_price values
-        # for reserved instances are not zero, thus the cost value is moved to
-        # amortised_cost
-        item_dict["total_cost"] = item_dict["cost"]
-
-        usage_item = models.Usage(**item_dict)
-
-        if usage_item.reservation_id is not None:
-            usage_item.amortised_cost = usage_item.cost
-            usage_item.cost = 0.0
-        else:
-            usage_item.amortised_cost = 0.0
-
-        all_items.append(usage_item)
+        all_items.append(usage_detail_to_usage_model(item))
 
     combined_items = compress_items(all_items)
 
