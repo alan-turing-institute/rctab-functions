@@ -4,13 +4,16 @@ import copy
 import logging
 from datetime import date, datetime, timedelta
 from functools import lru_cache
-from typing import Generator, Iterable, Optional
+from typing import Generator, Iterable, Optional, cast
 from uuid import UUID
 
 import requests
 from azure.identity import DefaultAzureCredential
 from azure.mgmt.consumption import ConsumptionManagementClient
-from azure.mgmt.consumption.models import UsageDetailsListResult, UsageDetail
+from azure.mgmt.consumption.models import (
+    ModernUsageDetail,
+    UsageDetail,
+)
 from pydantic import HttpUrl
 from rctab_models import models
 
@@ -38,7 +41,7 @@ def get_all_usage(
     end_time: datetime,
     billing_account_id: Optional[str] = None,
     mgmt_group: Optional[str] = None,
-) -> Iterable[UsageDetailsListResult]:
+) -> Iterable[UsageDetail]:
     """Get Azure usage data for a subscription between start_time and end_time.
 
     Args:
@@ -83,7 +86,9 @@ def get_all_usage(
         scope=scope_expression, filter=filter_expression, metric=metric_expression
     )
 
-    return data
+    # Azure SDK typing here is too broad/inaccurate: list() actually iterates
+    # UsageDetail items (legacy or modern), not UsageDetailsListResult wrappers.
+    return cast(Iterable[UsageDetail], data)
 
 
 def combine_items(item_to_update: models.Usage, other_item: models.Usage) -> None:
@@ -144,6 +149,14 @@ def usage_detail_to_usage_model(detail: UsageDetail) -> models.Usage:
     """Convert a Legacy or Modern UsageDetail to a Usage model."""
     item_dict = dict(vars(detail))
 
+    if isinstance(detail, ModernUsageDetail):
+        # Align modern usage naming with the legacy-shaped rctab Usage model.
+        # We intentionally use billed local currency cost, not USD cost.
+        item_dict["subscription_id"] = item_dict["subscription_guid"]
+        item_dict["cost"] = item_dict["cost_in_billing_currency"]
+        item_dict["billing_currency"] = item_dict["billing_currency_code"]
+        item_dict["invoice_section"] = item_dict.get("invoice_section_name")
+
     # When AmortizedCost metric is being used, the cost and effective_price values
     # for reserved instances are not zero, thus the cost value is moved to
     # amortised_cost
@@ -161,7 +174,7 @@ def usage_detail_to_usage_model(detail: UsageDetail) -> models.Usage:
 
 
 def retrieve_usage(
-    usage_data: Iterable[UsageDetailsListResult],
+    usage_data: Iterable[UsageDetail],
 ) -> list[models.Usage]:
     """Retrieve usage data from Azure.
 
@@ -195,7 +208,7 @@ def retrieve_usage(
 
 def retrieve_and_send_usage(
     hostname_or_ip: HttpUrl,
-    usage_data: Iterable[UsageDetailsListResult],
+    usage_data: Iterable[UsageDetail],
     start_date: date,
     end_date: date,
 ) -> None:
