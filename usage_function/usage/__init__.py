@@ -54,6 +54,7 @@ def main(mytimer: func.TimerRequest) -> None:
                 usage_date,
                 usage_date,
                 billing_account_id=config.BILLING_ACCOUNT_ID,
+                billing_profile_id=config.BILLING_PROFILE_ID,
                 mgmt_group=config.MGMT_GROUP,
             )
 

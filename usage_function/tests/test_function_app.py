@@ -72,12 +72,14 @@ class TestUsage(TestCase):
                                     ninth,
                                     ninth,
                                     billing_account_id=None,
+                                    billing_profile_id=None,
                                     mgmt_group="mgmt-group",
                                 ),
                                 call(
                                     eighth,
                                     eighth,
                                     billing_account_id=None,
+                                    billing_profile_id=None,
                                     mgmt_group="mgmt-group",
                                 ),
                             ]
