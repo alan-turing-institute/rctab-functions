@@ -4,13 +4,13 @@ import copy
 import logging
 from datetime import date, datetime, timedelta
 from functools import lru_cache
-from typing import Generator, Iterable, Optional
+from typing import Generator, Iterable, Optional, cast
 from uuid import UUID
 
 import requests
 from azure.identity import DefaultAzureCredential
 from azure.mgmt.consumption import ConsumptionManagementClient
-from azure.mgmt.consumption.models import UsageDetailsListResult
+from azure.mgmt.consumption.models import ModernUsageDetail, UsageDetail
 from pydantic import HttpUrl
 from rctab_models import models
 
@@ -37,14 +37,16 @@ def get_all_usage(
     start_time: datetime,
     end_time: datetime,
     billing_account_id: Optional[str] = None,
+    billing_profile_id: Optional[str] = None,
     mgmt_group: Optional[str] = None,
-) -> Iterable[UsageDetailsListResult]:
+) -> Iterable[UsageDetail]:
     """Get Azure usage data for a subscription between start_time and end_time.
 
     Args:
         start_time: Start time.
         end_time: End time.
         billing_account_id: Billing Account ID.
+        billing_profile_id: Billing Profile ID.
         mgmt_group: The name of a management group.
     """
     # It doesn't matter which subscription ID we use for this bit.
@@ -68,6 +70,8 @@ def get_all_usage(
         scope_expression = (
             f"/providers/Microsoft.Billing/billingAccounts/{billing_account_id}"
         )
+        if billing_profile_id:
+            scope_expression += f"/billingProfiles/{billing_profile_id}"
     elif mgmt_group:
         scope_expression = (
             f"/providers/Microsoft.Management/managementGroups/{mgmt_group}"
@@ -83,7 +87,9 @@ def get_all_usage(
         scope=scope_expression, filter=filter_expression, metric=metric_expression
     )
 
-    return data
+    # Azure SDK typing here is too broad/inaccurate: list() actually iterates
+    # UsageDetail items (legacy or modern), not UsageDetailsListResult wrappers.
+    return cast(Iterable[UsageDetail], data)
 
 
 def combine_items(item_to_update: models.Usage, other_item: models.Usage) -> None:
@@ -140,8 +146,36 @@ def compress_items(items: list[models.Usage]) -> list[models.Usage]:
     return ret_list
 
 
+def usage_detail_to_usage_model(detail: UsageDetail) -> models.Usage:
+    """Convert a Legacy or Modern UsageDetail to a Usage model."""
+    item_dict = dict(vars(detail))
+
+    if isinstance(detail, ModernUsageDetail):
+        # Align modern usage naming with the legacy-shaped rctab Usage model.
+        # We intentionally use billed local currency cost, not USD cost.
+        item_dict["subscription_id"] = item_dict["subscription_guid"]
+        item_dict["cost"] = item_dict["cost_in_billing_currency"]
+        item_dict["billing_currency"] = item_dict["billing_currency_code"]
+        item_dict["invoice_section"] = item_dict.get("invoice_section_name")
+
+    # When AmortizedCost metric is being used, the cost and effective_price values
+    # for reserved instances are not zero, thus the cost value is moved to
+    # amortised_cost
+    item_dict["total_cost"] = item_dict["cost"]
+
+    usage_item = models.Usage(**item_dict)
+
+    if usage_item.reservation_id is not None:
+        usage_item.amortised_cost = usage_item.cost
+        usage_item.cost = 0.0
+    else:
+        usage_item.amortised_cost = 0.0
+
+    return usage_item
+
+
 def retrieve_usage(
-    usage_data: Iterable[UsageDetailsListResult],
+    usage_data: Iterable[UsageDetail],
 ) -> list[models.Usage]:
     """Retrieve usage data from Azure.
 
@@ -160,22 +194,7 @@ def retrieve_usage(
         if i % 200 == 0:
             logging.warning("Requesting item %d", i)
 
-        item_dict = dict(vars(item))
-
-        # When AmortizedCost metric is being used, the cost and effective_price values
-        # for reserved instances are not zero, thus the cost value is moved to
-        # amortised_cost
-        item_dict["total_cost"] = item_dict["cost"]
-
-        usage_item = models.Usage(**item_dict)
-
-        if usage_item.reservation_id is not None:
-            usage_item.amortised_cost = usage_item.cost
-            usage_item.cost = 0.0
-        else:
-            usage_item.amortised_cost = 0.0
-
-        all_items.append(usage_item)
+        all_items.append(usage_detail_to_usage_model(item))
 
     combined_items = compress_items(all_items)
 
@@ -190,7 +209,7 @@ def retrieve_usage(
 
 def retrieve_and_send_usage(
     hostname_or_ip: HttpUrl,
-    usage_data: Iterable[UsageDetailsListResult],
+    usage_data: Iterable[UsageDetail],
     start_date: date,
     end_date: date,
 ) -> None:

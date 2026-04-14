@@ -7,6 +7,7 @@ from unittest import TestCase, main
 from unittest.mock import MagicMock, call, patch
 from uuid import UUID
 
+from azure.mgmt.consumption.models import ModernUsageDetail
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from pydantic import HttpUrl, TypeAdapter
@@ -41,7 +42,70 @@ class DummyAzureUsage:
 class TestUsageUtils(TestCase):
     """Tests for the utils.usage module."""
 
-    def test_get_all_usage(self) -> None:
+    def test_get_all_usage_billing_account(self) -> None:
+        # Mock usage data, for when we patch usage_details.list
+        expected = [1, 2]
+
+        with patch("utils.usage.ConsumptionManagementClient") as mock_client:
+            mock_list_func = mock_client.return_value.usage_details.list
+            mock_list_func.return_value = expected
+
+            jan_tenth = datetime(2021, 1, 10, 1, 1, 1, 1)
+            actual = list(
+                utils.usage.get_all_usage(
+                    jan_tenth - timedelta(days=5),
+                    jan_tenth,
+                    billing_account_id="1:2",
+                )
+            )
+
+            mock_client.assert_called_once_with(
+                credential=utils.usage.CREDENTIALS,
+                subscription_id=str(UUID(int=0)),
+            )
+
+            mock_list_func.assert_called_once_with(
+                scope="/providers/Microsoft.Billing/billingAccounts/1:2",
+                filter="properties/usageEnd ge '2021-01-05T01:01:01Z' and "
+                "properties/usageEnd le '2021-01-10T01:01:01Z'",
+                metric="AmortizedCost",
+            )
+
+        self.assertListEqual(expected, actual)
+
+    def test_get_all_usage_billing_profile(self) -> None:
+        # Mock usage data, for when we patch usage_details.list
+        expected = [1, 2]
+
+        with patch("utils.usage.ConsumptionManagementClient") as mock_client:
+            mock_list_func = mock_client.return_value.usage_details.list
+            mock_list_func.return_value = expected
+
+            jan_tenth = datetime(2021, 1, 10, 1, 1, 1, 1)
+            actual = list(
+                utils.usage.get_all_usage(
+                    jan_tenth - timedelta(days=5),
+                    jan_tenth,
+                    billing_account_id="1:2",
+                    billing_profile_id="3",
+                )
+            )
+
+            mock_client.assert_called_once_with(
+                credential=utils.usage.CREDENTIALS,
+                subscription_id=str(UUID(int=0)),
+            )
+
+            mock_list_func.assert_called_once_with(
+                scope="/providers/Microsoft.Billing/billingAccounts/1:2/billingProfiles/3",
+                filter="properties/usageEnd ge '2021-01-05T01:01:01Z' and "
+                "properties/usageEnd le '2021-01-10T01:01:01Z'",
+                metric="AmortizedCost",
+            )
+
+        self.assertListEqual(expected, actual)
+
+    def test_get_all_usage_mgmt_group(self) -> None:
         # Mock usage data, for when we patch usage_details.list
         expected = [1, 2]
 
@@ -332,6 +396,44 @@ class TestUsageUtils(TestCase):
 
         self.assertListEqual([expected_item_1, expected_item_2], actual)
 
+    def test_retrieve_usage_modern_usage_detail(self) -> None:
+        """Check retrieve_usage can handle modern usage detail objects."""
+        modern_usage_1 = ModernUsageDetail()
+        modern_usage_1.id = "1"
+        modern_usage_1.subscription_guid = str(UUID(int=0))
+        modern_usage_1.date = date.today()
+        modern_usage_1.quantity = 1
+        modern_usage_1.cost_in_billing_currency = 1
+        modern_usage_1.unit_price = 1
+        modern_usage_1.effective_price = 1
+        modern_usage_1.billing_currency_code = "GBP"
+
+        modern_usage_2 = ModernUsageDetail()
+        modern_usage_2.id = "1"
+        modern_usage_2.subscription_guid = str(UUID(int=0))
+        modern_usage_2.date = date.today()
+        modern_usage_2.quantity = 1
+        modern_usage_2.cost_in_billing_currency = 1
+        modern_usage_2.unit_price = 1
+        modern_usage_2.effective_price = 1
+        modern_usage_2.billing_currency_code = "GBP"
+
+        actual = utils.usage.retrieve_usage([modern_usage_1, modern_usage_2])  # type: ignore[arg-type]
+        expected = models.Usage(
+            id="1",
+            subscription_id=UUID(int=0),
+            quantity=2,
+            cost=2,
+            date=date.today(),
+            amortised_cost=0,
+            total_cost=2,
+            unit_price=2,
+            effective_price=2,
+            billing_currency="GBP",
+        )
+
+        self.assertListEqual([expected], actual)
+
     def test_date_range(self) -> None:
         start = datetime(year=2021, month=11, day=1, hour=2)
         end = datetime(year=2021, month=11, day=2, hour=2)
@@ -579,6 +681,18 @@ class TestSettings(TestCase):
             utils.settings.Settings(
                 PRIVATE_KEY=self.private_key_str,
                 API_URL=HTTP_ADAPTER.validate_python("https://my.host"),
+                _env_file=None,
+            )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "BILLING_PROFILE_ID is only valid with a BILLING_ACCOUNT_ID.",
+        ):
+            utils.settings.Settings(
+                PRIVATE_KEY=self.private_key_str,
+                API_URL=HTTP_ADAPTER.validate_python("https://my.host"),
+                MGMT_GROUP="x",
+                BILLING_PROFILE_ID="y",
                 _env_file=None,
             )
 
