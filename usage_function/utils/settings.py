@@ -19,8 +19,9 @@ class Settings(BaseSettings):
     CM_MGMT_GROUP: Optional[str] = None  # The cost management function mgmt group
     MGMT_GROUP: Optional[str] = None  # Either, the usage function mgmt group...
     BILLING_ACCOUNT_ID: Optional[str] = (
-        None  # ...or the usage function billing account ID
+        None  # ...or the usage function billing account ID, with an optional...
     )
+    BILLING_PROFILE_ID: Optional[str] = None  # ...billing profile ID.
     CENTRAL_LOGGING_CONNECTION_STRING: Optional[str] = None
 
     # Settings for the settings class itself.
@@ -56,6 +57,11 @@ class Settings(BaseSettings):
         ):
             raise ValueError(
                 "Exactly one of MGMT_GROUP and BILLING_ACCOUNT_ID should be empty."
+            )
+
+        if self.BILLING_PROFILE_ID and not self.BILLING_ACCOUNT_ID:
+            raise ValueError(
+                "BILLING_PROFILE_ID is only valid with a BILLING_ACCOUNT_ID."
             )
 
         return self

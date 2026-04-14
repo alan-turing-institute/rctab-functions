@@ -37,6 +37,7 @@ def get_all_usage(
     start_time: datetime,
     end_time: datetime,
     billing_account_id: Optional[str] = None,
+    billing_profile_id: Optional[str] = None,
     mgmt_group: Optional[str] = None,
 ) -> Iterable[UsageDetail]:
     """Get Azure usage data for a subscription between start_time and end_time.
@@ -45,6 +46,7 @@ def get_all_usage(
         start_time: Start time.
         end_time: End time.
         billing_account_id: Billing Account ID.
+        billing_profile_id: Billing Profile ID.
         mgmt_group: The name of a management group.
     """
     # It doesn't matter which subscription ID we use for this bit.
@@ -68,6 +70,8 @@ def get_all_usage(
         scope_expression = (
             f"/providers/Microsoft.Billing/billingAccounts/{billing_account_id}"
         )
+        if billing_profile_id:
+            scope_expression += f"/billingProfiles/{billing_profile_id}"
     elif mgmt_group:
         scope_expression = (
             f"/providers/Microsoft.Management/managementGroups/{mgmt_group}"
