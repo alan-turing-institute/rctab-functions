@@ -10,10 +10,7 @@ from uuid import UUID
 import requests
 from azure.identity import DefaultAzureCredential
 from azure.mgmt.consumption import ConsumptionManagementClient
-from azure.mgmt.consumption.models import (
-    ModernUsageDetail,
-    UsageDetail,
-)
+from azure.mgmt.consumption.models import ModernUsageDetail, UsageDetail
 from pydantic import HttpUrl
 from rctab_models import models
 
