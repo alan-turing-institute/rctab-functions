@@ -12,7 +12,7 @@ from azure.identity import DefaultAzureCredential
 from azure.mgmt.consumption import ConsumptionManagementClient
 from azure.mgmt.consumption.models import ModernUsageDetail, UsageDetail
 from pydantic import HttpUrl
-from pydantic_core._pydantic_core import ValidationError
+from pydantic_core import ValidationError
 from rctab_models import models
 
 from utils.auth import BearerAuth

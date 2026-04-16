@@ -476,7 +476,7 @@ class TestUsageUtils(TestCase):
         )
         self.assertEqual(expected, existing_item)
 
-    def test_usage_detail_to_usage_model(self):
+    def test_usage_detail_to_usage_model(self) -> None:
         """Check that we truncate dates."""
         modern_usage = ModernUsageDetail()
         modern_usage.id = "1"
