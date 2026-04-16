@@ -12,6 +12,7 @@ from azure.identity import DefaultAzureCredential
 from azure.mgmt.consumption import ConsumptionManagementClient
 from azure.mgmt.consumption.models import ModernUsageDetail, UsageDetail
 from pydantic import HttpUrl
+from pydantic_core._pydantic_core import ValidationError
 from rctab_models import models
 
 from utils.auth import BearerAuth
@@ -163,7 +164,16 @@ def usage_detail_to_usage_model(detail: UsageDetail) -> models.Usage:
     # amortised_cost
     item_dict["total_cost"] = item_dict["cost"]
 
-    usage_item = models.Usage(**item_dict)
+    try:
+        usage_item = models.Usage(**item_dict)
+    except ValidationError:
+        logging.warning(
+            "We presume that dates are midnight but date is: %s", item_dict["date"]
+        )
+        item_dict["date"] = item_dict["date"].replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
+        usage_item = models.Usage(**item_dict)
 
     if usage_item.reservation_id is not None:
         usage_item.amortised_cost = usage_item.cost

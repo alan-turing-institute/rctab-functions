@@ -476,6 +476,35 @@ class TestUsageUtils(TestCase):
         )
         self.assertEqual(expected, existing_item)
 
+    def test_usage_detail_to_usage_model(self):
+        """Check that we truncate dates."""
+        modern_usage = ModernUsageDetail()
+        modern_usage.id = "1"
+        modern_usage.subscription_guid = str(UUID(int=0))
+        modern_usage.date = datetime(year=2021, month=11, day=1, hour=2)
+        modern_usage.quantity = 1
+        modern_usage.cost_in_billing_currency = 1
+        modern_usage.unit_price = 1
+        modern_usage.effective_price = 1
+        modern_usage.billing_currency_code = "GBP"
+
+        converted = utils.usage.usage_detail_to_usage_model(modern_usage)
+        self.assertEqual(
+            models.Usage(
+                id="1",
+                subscription_id=UUID(int=0),
+                date=date(year=2021, month=11, day=1),
+                total_cost=1,
+                cost=1,
+                amortised_cost=0,
+                unit_price=1,
+                quantity=1,
+                effective_price=1,
+                billing_currency="GBP",
+            ),
+            converted,
+        )
+
 
 class TestCompressItems(TestCase):
     """Tests for the utils.usage.compress_items function."""
