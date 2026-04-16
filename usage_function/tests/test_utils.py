@@ -481,7 +481,16 @@ class TestUsageUtils(TestCase):
         modern_usage = ModernUsageDetail()
         modern_usage.id = "1"
         modern_usage.subscription_guid = str(UUID(int=0))
+
+        # Note we truncate these dates.
         modern_usage.date = datetime(year=2021, month=11, day=1, hour=2)
+        modern_usage.billing_period_start_date = datetime(
+            year=2021, month=11, day=2, hour=2
+        )
+        modern_usage.billing_period_end_date = datetime(
+            year=2021, month=11, day=3, hour=2
+        )
+
         modern_usage.quantity = 1
         modern_usage.cost_in_billing_currency = 1
         modern_usage.unit_price = 1
@@ -494,6 +503,8 @@ class TestUsageUtils(TestCase):
                 id="1",
                 subscription_id=UUID(int=0),
                 date=date(year=2021, month=11, day=1),
+                billing_period_start_date=datetime(year=2021, month=11, day=2),
+                billing_period_end_date=datetime(year=2021, month=11, day=3),
                 total_cost=1,
                 cost=1,
                 amortised_cost=0,

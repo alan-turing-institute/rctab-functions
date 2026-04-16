@@ -173,6 +173,12 @@ def usage_detail_to_usage_model(detail: UsageDetail) -> models.Usage:
         item_dict["date"] = item_dict["date"].replace(
             hour=0, minute=0, second=0, microsecond=0
         )
+        item_dict["billing_period_start_date"] = item_dict[
+            "billing_period_start_date"
+        ].replace(hour=0, minute=0, second=0, microsecond=0)
+        item_dict["billing_period_end_date"] = item_dict[
+            "billing_period_end_date"
+        ].replace(hour=0, minute=0, second=0, microsecond=0)
         usage_item = models.Usage(**item_dict)
 
     if usage_item.reservation_id is not None:
