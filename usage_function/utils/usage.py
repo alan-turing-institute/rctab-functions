@@ -185,7 +185,7 @@ def usage_detail_to_usage_model(detail: UsageDetail) -> models.Usage:
         ].replace(hour=0, minute=0, second=0, microsecond=0)
         usage_item = models.Usage(**item_dict)
 
-    if usage_item.reservation_id is not None:
+    if usage_item.reservation_id:
         usage_item.amortised_cost = usage_item.cost
         usage_item.cost = 0.0
     else:
