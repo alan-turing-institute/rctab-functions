@@ -4,6 +4,7 @@ import copy
 import logging
 from datetime import date, datetime, timedelta
 from functools import lru_cache
+from time import sleep
 from typing import Generator, Iterable, Optional, cast
 from uuid import UUID
 
@@ -31,15 +32,17 @@ def date_range(
         end_date: Last date included in range.
     """
     for n in range(int((end_date - start_date).days + 1)):
-        yield datetime.combine(start_date.date() + timedelta(n), datetime.min.time())
+        yield datetime.combine(
+            start_date.date() + timedelta(n), datetime.min.time(), start_date.tzinfo
+        )
 
 
 def get_all_usage(
-    start_time: datetime,
-    end_time: datetime,
-    billing_account_id: Optional[str] = None,
+    # start_time: datetime,
+    # end_time: datetime,
+    billing_account_id: str,
     billing_profile_id: Optional[str] = None,
-    mgmt_group: Optional[str] = None,
+    # mgmt_group: Optional[str] = None,
 ) -> Iterable[UsageDetail]:
     """Get Azure usage data for a subscription between start_time and end_time.
 
@@ -58,25 +61,26 @@ def get_all_usage(
     # Note that the data we get back seems to ignore the time part
     # and requesting data between 2023-01-01T00:00:00Z and 2023-01-01T00:00:00Z
     # will return data for the whole of 2023-01-01.
-    filter_from = "properties/usageEnd ge '{}'".format(
-        start_time.strftime("%Y-%m-%dT%H:%M:%SZ")
-    )
-    filter_to = "properties/usageEnd le '{}'".format(
-        end_time.strftime("%Y-%m-%dT%H:%M:%SZ")
-    )
-    filter_expression = "{} and {}".format(filter_from, filter_to)
+    # filter_from = "properties/usageEnd ge '{}'".format(
+    #     start_time.strftime("%Y-%m-%dT%H:%M:%SZ")
+    # )
+    # filter_to = "properties/usageEnd le '{}'".format(
+    #     end_time.strftime("%Y-%m-%dT%H:%M:%SZ")
+    # )
+    # filter_expression = "{} and {}".format(filter_from, filter_to)
+    filter_expression = None
 
     scope_expression = ""
-    if billing_account_id:
-        scope_expression = (
-            f"/providers/Microsoft.Billing/billingAccounts/{billing_account_id}"
-        )
-        if billing_profile_id:
-            scope_expression += f"/billingProfiles/{billing_profile_id}"
-    elif mgmt_group:
-        scope_expression = (
-            f"/providers/Microsoft.Management/managementGroups/{mgmt_group}"
-        )
+    # if billing_account_id:
+    scope_expression = (
+        f"/providers/Microsoft.Billing/billingAccounts/{billing_account_id}"
+    )
+    if billing_profile_id:
+        scope_expression += f"/billingProfiles/{billing_profile_id}"
+    # elif mgmt_group:
+    #     scope_expression = (
+    #         f"/providers/Microsoft.Management/managementGroups/{mgmt_group}"
+    #     )
 
     # Actual Cost - Provides data to reconcile with your monthly bill.
     # Amortized Cost - This dataset is similar to the Actual Cost dataset except
@@ -192,6 +196,8 @@ def usage_detail_to_usage_model(detail: UsageDetail) -> models.Usage:
 
 def retrieve_usage(
     usage_data: Iterable[UsageDetail],
+    start_date: date,
+    end_date: date,
 ) -> list[models.Usage]:
     """Retrieve usage data from Azure.
 
@@ -210,7 +216,14 @@ def retrieve_usage(
         if i % 200 == 0:
             logging.warning("Requesting item %d", i)
 
-        all_items.append(usage_detail_to_usage_model(item))
+        if i > 0 and i % 1000 == 0:
+            # There is a rate limit.
+            sleep(60)
+
+        item_dict = dict(vars(item))
+        if start_date <= item_dict["date"] <= end_date:
+            # We have to manually filter, for the time being.
+            all_items.append(usage_detail_to_usage_model(item))
 
     combined_items = compress_items(all_items)
 
@@ -226,20 +239,20 @@ def retrieve_usage(
 def retrieve_and_send_usage(
     hostname_or_ip: HttpUrl,
     usage_data: Iterable[UsageDetail],
-    start_date: date,
-    end_date: date,
+    start_datetime: datetime,
+    end_datetime: datetime,
 ) -> None:
     """Retrieve usage data from Azure and send it to the API.
 
     Args:
         hostname_or_ip: Hostname or IP of the API.
         usage_data: Usage data object.
-        start_date: The start of the date range that has been collected.
-        end_date: The inclusive end of the date range that has been collected.
+        start_datetime: The start of the date range that has been collected.
+        end_datetime: The inclusive end of the date range that has been collected.
     """
-    usage_list = retrieve_usage(usage_data)
+    usage_list = retrieve_usage(usage_data, start_datetime, end_datetime)
 
-    send_usage(hostname_or_ip, usage_list, start_date, end_date)
+    send_usage(hostname_or_ip, usage_list, start_datetime.date(), end_datetime.date())
 
 
 def send_usage(
