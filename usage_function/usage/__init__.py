@@ -38,7 +38,9 @@ def main(mytimer: func.TimerRequest) -> None:
         - timedelta(days=config.USAGE_HISTORY_DAYS - 1)
         - timedelta(days=config.USAGE_HISTORY_DAYS_OFFSET)
     )
-    end_datetime = now - timedelta(days=config.USAGE_HISTORY_DAYS_OFFSET)
+    end_datetime = (
+        now - timedelta(days=config.USAGE_HISTORY_DAYS_OFFSET) + timedelta(days=1)
+    )
 
     logger.warning(
         "Requesting all data between %s and %s",
@@ -49,10 +51,13 @@ def main(mytimer: func.TimerRequest) -> None:
     # for usage_date in reversed(list(date_range(start_datetime, end_datetime))):
     # Try up to 5 times to get usage and send to the API
     for _ in range(5):
-        # logger.warning("Requesting all usage data for %s", usage_date)
-        usage = get_all_usage(
-            # start_datetime,
-            # end_datetime,
+        logger.warning(
+            "Requesting all usage data between %s and %s", start_datetime, end_datetime
+        )
+        # usage_urls = [1]
+        usage_urls = get_all_usage(
+            start_datetime,
+            end_datetime,
             billing_account_id=config.BILLING_ACCOUNT_ID,
             billing_profile_id=config.BILLING_PROFILE_ID,
             # mgmt_group=config.MGMT_GROUP,
@@ -61,7 +66,7 @@ def main(mytimer: func.TimerRequest) -> None:
         try:
             retrieve_and_send_usage(
                 config.API_URL,
-                usage,
+                usage_urls,
                 start_datetime,
                 end_datetime,
             )
@@ -72,3 +77,6 @@ def main(mytimer: func.TimerRequest) -> None:
             time.sleep(60)
 
     raise RuntimeError("Could not collect and send usage information.")
+
+
+#

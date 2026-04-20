@@ -24,6 +24,7 @@ pydantic-settings = "^2.9.1"
 PyJWT = {extras = ["crypto"], version = "^2.8.0"}
 requests = "^2.31.0"
 rctab_models = { git = "https://github.com/alan-turing-institute/rctab-models", tag = "0.2.0" }
+azure-storage-blob = "^12.28.0"
 
 [tool.poetry.group.dev.dependencies]
 coverage = "^7.5.1"

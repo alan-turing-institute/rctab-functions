@@ -174,6 +174,27 @@ azure-mgmt-core = ">=1.3.2,<2.0.0"
 msrest = ">=0.7.1"
 
 [[package]]
+name = "azure-storage-blob"
+version = "12.28.0"
+description = "Microsoft Azure Blob Storage Client Library for Python"
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "azure_storage_blob-12.28.0-py3-none-any.whl", hash = "sha256:00fb1db28bf6a7b7ecaa48e3b1d5c83bfadacc5a678b77826081304bd87d6461"},
+    {file = "azure_storage_blob-12.28.0.tar.gz", hash = "sha256:e7d98ea108258d29aa0efbfd591b2e2075fa1722a2fae8699f0b3c9de11eff41"},
+]
+
+[package.dependencies]
+azure-core = ">=1.30.0"
+cryptography = ">=2.1.4"
+isodate = ">=0.6.1"
+typing-extensions = ">=4.6.0"
+
+[package.extras]
+aio = ["azure-core[aio] (>=1.30.0)"]
+
+[[package]]
 name = "cachetools"
 version = "5.4.0"
 description = "Extensible memoizing collections and decorators"
@@ -1588,4 +1609,4 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "9b185783742369f98f05f82744e531873da8f9b973bcba172f37e028d3719ce5"
+content-hash = "48bbdfb4878795ede11abb2900ccdc51bce8fff14e88ee53d7056195328e47a1"
