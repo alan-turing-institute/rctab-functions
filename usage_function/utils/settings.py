@@ -3,7 +3,7 @@
 from functools import lru_cache
 from typing import Optional
 
-from pydantic import HttpUrl
+from pydantic import HttpUrl, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     # Settings for the settings class itself.
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
+    @field_validator("PRIVATE_KEY")
     def correct_start_and_end(cls, v: str) -> str:  # pylint: disable=no-self-argument
         """Validate the private key.
 

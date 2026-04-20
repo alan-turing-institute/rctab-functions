@@ -5,21 +5,18 @@ import csv
 import logging
 from datetime import date, datetime, timedelta
 from functools import lru_cache
-from typing import Any, Generator, Iterable, Optional, cast
+from typing import Any, Generator, Optional
 
 import requests
 from azure.identity import DefaultAzureCredential
-from azure.mgmt.consumption.models import UsageDetail
 from azure.mgmt.costmanagement import CostManagementClient
 from azure.mgmt.costmanagement.models import (
-    BlobInfo,
-    GenerateCostDetailsReportRequestDefinition,
-    CostDetailsTimePeriod,
     CostDetailsMetricType,
+    CostDetailsTimePeriod,
+    GenerateCostDetailsReportRequestDefinition,
 )
 from azure.storage.blob import BlobClient
 from pydantic import HttpUrl
-from pydantic_core import ValidationError
 from rctab_models import models
 
 from utils.auth import BearerAuth
@@ -69,45 +66,8 @@ def get_all_usage(
         ),
     ).result()
 
-    return [b.blob_link for b in result.blobs]
-
-    # Note that the data we get back seems to ignore the time part
-    # and requesting data between 2023-01-01T00:00:00Z and 2023-01-01T00:00:00Z
-    # will return data for the whole of 2023-01-01.
-    # filter_from = "properties/usageEnd ge '{}'".format(
-    #     start_time.strftime("%Y-%m-%dT%H:%M:%SZ")
-    # )
-    # filter_to = "properties/usageEnd le '{}'".format(
-    #     end_time.strftime("%Y-%m-%dT%H:%M:%SZ")
-    # )
-    # filter_expression = "{} and {}".format(filter_from, filter_to)
-    filter_expression = None
-
-    scope_expression = ""
-    # if billing_account_id:
-    scope_expression = (
-        f"/providers/Microsoft.Billing/billingAccounts/{billing_account_id}"
-    )
-    if billing_profile_id:
-        scope_expression += f"/billingProfiles/{billing_profile_id}"
-    # elif mgmt_group:
-    #     scope_expression = (
-    #         f"/providers/Microsoft.Management/managementGroups/{mgmt_group}"
-    #     )
-
-    # Actual Cost - Provides data to reconcile with your monthly bill.
-    # Amortized Cost - This dataset is similar to the Actual Cost dataset except
-    # that the EffectivePrice for the usage that gets reservation discount is
-    # the prorated cost of the reservation (instead of being zero).
-    metric_expression = "AmortizedCost"
-
-    data = consumption_client.usage_details.list(
-        scope=scope_expression, filter=filter_expression, metric=metric_expression
-    )
-
-    # Azure SDK typing here is too broad/inaccurate: list() actually iterates
-    # UsageDetail items (legacy or modern), not UsageDetailsListResult wrappers.
-    return cast(Iterable[UsageDetail], data)
+    assert result.blobs, "begin_create_operation().result() contained no blobs"
+    return [b.blob_link for b in result.blobs if b.blob_link]
 
 
 def combine_items(item_to_update: models.Usage, other_item: models.Usage) -> None:
@@ -164,6 +124,11 @@ def compress_items(items: list[models.Usage]) -> list[models.Usage]:
     return ret_list
 
 
+def us_date_to_iso(us_date: str) -> str:
+    """Convert a '04/17/1990' string to '1990-04-17'."""
+    return us_date[6:10] + "-" + us_date[0:2] + "-" + us_date[3:5]
+
+
 def usage_detail_to_usage_model(item_dict: dict[str, Any]) -> models.Usage:
     """Convert a Legacy or Modern UsageDetail to a Usage model."""
     # item_dict = dict(vars(detail))
@@ -196,7 +161,6 @@ def usage_detail_to_usage_model(item_dict: dict[str, Any]) -> models.Usage:
     #         "billing_period_end_date"
     #     ].replace(hour=0, minute=0, second=0, microsecond=0)
     #     usage_item = models.Usage(**item_dict)
-    us_date_to_iso = lambda x: x[6:10] + "-" + x[0:2] + "-" + x[3:5]
     billing_currency = item_dict["billingCurrency"]
     # assert billing_currency == "GBP", f"Expected GBP but got {billing_currency}"
     # if not item_dict["billingPeriodStartDate"]:
@@ -294,12 +258,12 @@ def retrieve_usage(
     all_items: list[models.Usage] = []
     started_processing_at = datetime.now()
 
-    for i, url in enumerate(usage_urls):
+    for url in usage_urls:
         blob = BlobClient.from_blob_url(url)
         with open("cost_details_report.csv", "wb") as f:
             blob.download_blob().readinto(f)
 
-        with open("cost_details_report.csv", "r", newline="") as f:
+        with open("cost_details_report.csv", "r", encoding="utf-8", newline="") as f:
             reader = csv.DictReader(f)
 
             for row in reader:

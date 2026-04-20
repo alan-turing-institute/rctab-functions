@@ -50,7 +50,6 @@ class TestUsage(TestCase):
                             "-----END OPENSSH PRIVATE KEY-----",
                             USAGE_HISTORY_DAYS=2,
                             USAGE_HISTORY_DAYS_OFFSET=1,
-                            MGMT_GROUP="mgmt-group",
                             _env_file=None,
                         )
 

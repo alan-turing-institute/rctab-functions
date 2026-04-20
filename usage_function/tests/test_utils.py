@@ -105,38 +105,6 @@ class TestUsageUtils(TestCase):
 
         self.assertListEqual(expected, actual)
 
-    def test_get_all_usage_mgmt_group(self) -> None:
-        # Mock usage data, for when we patch usage_details.list
-        expected = [1, 2]
-
-        with patch("utils.usage.ConsumptionManagementClient") as mock_client:
-            mock_list_func = mock_client.return_value.usage_details.list
-            mock_list_func.return_value = expected
-
-            jan_tenth = datetime(2021, 1, 10, 1, 1, 1, 1)
-            actual = list(
-                utils.usage.get_all_usage(
-                    jan_tenth - timedelta(days=5),
-                    jan_tenth,
-                    mgmt_group="some-mgmt-group",
-                )
-            )
-
-            mock_client.assert_called_once_with(
-                credential=utils.usage.CREDENTIALS,
-                subscription_id=str(UUID(int=0)),
-            )
-
-            mock_list_func.assert_called_once_with(
-                scope="/providers/Microsoft.Management"
-                "/managementGroups/some-mgmt-group",
-                filter="properties/usageEnd ge '2021-01-05T01:01:01Z' and "
-                "properties/usageEnd le '2021-01-10T01:01:01Z'",
-                metric="AmortizedCost",
-            )
-
-        self.assertListEqual(expected, actual)
-
     def test_retrieve_and_send_usage(self) -> None:
         usage_dict = {
             "additional_properties": {},
@@ -516,6 +484,9 @@ class TestUsageUtils(TestCase):
             converted,
         )
 
+    def test_us_to_iso_date(self) -> None:
+        self.assertEqual("2021-12-24", utils.usage.us_date_to_iso("12/24/2021"))
+
 
 class TestCompressItems(TestCase):
     """Tests for the utils.usage.compress_items function."""
@@ -645,32 +616,24 @@ class TestSettings(TestCase):
         encryption_algorithm=serialization.NoEncryption(),
     ).decode("utf-8")
 
-    def test_valid_settings(self) -> None:
+    def test_maximal_settings(self) -> None:
         """Check that we can make a Settings instance, given the right arguments."""
-
         utils.settings.Settings(
-            PRIVATE_KEY=self.private_key_str,
             API_URL=HTTP_ADAPTER.validate_python("https://my.host"),
+            PRIVATE_KEY=self.private_key_str,
             USAGE_HISTORY_DAYS=10,
             USAGE_HISTORY_DAYS_OFFSET=1,
             LOG_LEVEL="WARNING",
-            MGMT_GROUP="some-mgmt-group",
+            CM_MGMT_GROUP="somegroup",
+            BILLING_ACCOUNT_ID="someid",
+            BILLING_PROFILE_ID="someotherid",
+            CENTRAL_LOGGING_CONNECTION_STRING="someconnectionstring",
             _env_file=None,
         )
 
     def test_default_settings(self) -> None:
-        private_key = rsa.generate_private_key(
-            public_exponent=65537,
-            key_size=2048,
-        )
-        private_key_str = private_key.private_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PrivateFormat.OpenSSH,
-            encryption_algorithm=serialization.NoEncryption(),
-        ).decode("utf-8")
-
         settings = utils.settings.Settings(
-            PRIVATE_KEY=private_key_str,
+            PRIVATE_KEY=self.private_key_str,
             API_URL=HTTP_ADAPTER.validate_python("https://my.host"),
             BILLING_ACCOUNT_ID="12345",
             _env_file=None,
@@ -680,7 +643,6 @@ class TestSettings(TestCase):
         self.assertEqual(settings.USAGE_HISTORY_DAYS, 3)
         self.assertEqual(settings.LOG_LEVEL, "WARNING")
         self.assertIsNone(settings.CM_MGMT_GROUP)
-        self.assertIsNone(settings.MGMT_GROUP)
 
     def test_key_validation(self) -> None:
         with self.assertRaisesRegex(
@@ -699,40 +661,6 @@ class TestSettings(TestCase):
             utils.settings.Settings(
                 API_URL=HTTP_ADAPTER.validate_python("https://my.host"),
                 PRIVATE_KEY="-----END OPENSSH PRIVATE KEY-----",
-                _env_file=None,
-            )
-
-        with self.assertRaisesRegex(
-            ValueError,
-            "Exactly one of MGMT_GROUP and BILLING_ACCOUNT_ID should be empty.",
-        ):
-            utils.settings.Settings(
-                PRIVATE_KEY=self.private_key_str,
-                API_URL=HTTP_ADAPTER.validate_python("https://my.host"),
-                MGMT_GROUP="x",
-                BILLING_ACCOUNT_ID="y",
-                _env_file=None,
-            )
-
-        with self.assertRaisesRegex(
-            ValueError,
-            "Exactly one of MGMT_GROUP and BILLING_ACCOUNT_ID should be empty.",
-        ):
-            utils.settings.Settings(
-                PRIVATE_KEY=self.private_key_str,
-                API_URL=HTTP_ADAPTER.validate_python("https://my.host"),
-                _env_file=None,
-            )
-
-        with self.assertRaisesRegex(
-            ValueError,
-            "BILLING_PROFILE_ID is only valid with a BILLING_ACCOUNT_ID.",
-        ):
-            utils.settings.Settings(
-                PRIVATE_KEY=self.private_key_str,
-                API_URL=HTTP_ADAPTER.validate_python("https://my.host"),
-                MGMT_GROUP="x",
-                BILLING_PROFILE_ID="y",
                 _env_file=None,
             )
 
