@@ -5,16 +5,18 @@ import csv
 import logging
 from datetime import date, datetime, timedelta
 from functools import lru_cache
-from time import sleep
 from typing import Any, Generator, Iterable, Optional, cast
-from uuid import UUID
 
 import requests
 from azure.identity import DefaultAzureCredential
-from azure.mgmt.consumption import ConsumptionManagementClient
-from azure.mgmt.consumption.models import ModernUsageDetail, UsageDetail
+from azure.mgmt.consumption.models import UsageDetail
 from azure.mgmt.costmanagement import CostManagementClient
-from azure.mgmt.costmanagement.models import BlobInfo
+from azure.mgmt.costmanagement.models import (
+    BlobInfo,
+    GenerateCostDetailsReportRequestDefinition,
+    CostDetailsTimePeriod,
+    CostDetailsMetricType,
+)
 from azure.storage.blob import BlobClient
 from pydantic import HttpUrl
 from pydantic_core import ValidationError
@@ -42,35 +44,29 @@ def date_range(
 
 
 def get_all_usage(
-    start_time: datetime,
-    end_time: datetime,
+    start_date: date,
+    end_date: date,
     billing_account_id: str,
     billing_profile_id: Optional[str] = None,
-    # mgmt_group: Optional[str] = None,
 ) -> list[str]:
     """Get Azure usage data for a subscription between start_time and end_time.
 
     Args:
-        start_time: Start time.
-        end_time: End time.
+        start_date: Start date.
+        end_date: End date (inclusive).
         billing_account_id: Billing Account ID.
         billing_profile_id: Billing Profile ID.
-        mgmt_group: The name of a management group.
     """
-    # It doesn't matter which subscription ID we use for this bit.
-    # consumption_client = ConsumptionManagementClient(
-    #     credential=CREDENTIALS, subscription_id=str(UUID(int=0))
-    # )
     client = CostManagementClient(CREDENTIALS)
 
     result = client.generate_cost_details_report.begin_create_operation(
         scope=f"providers/Microsoft.Billing/billingAccounts/{billing_account_id}/billingProfiles/{billing_profile_id}",
-        parameters={
-            "timePeriod": {
-                "start": start_time.date().isoformat(),
-                "end": end_time.date().isoformat(),
-            }
-        },
+        parameters=GenerateCostDetailsReportRequestDefinition(
+            time_period=CostDetailsTimePeriod(
+                start=start_date.isoformat(), end=end_date.isoformat()
+            ),
+            metric=CostDetailsMetricType.AMORTIZED_COST_COST_DETAILS_METRIC_TYPE,
+        ),
     ).result()
 
     return [b.blob_link for b in result.blobs]
@@ -321,20 +317,20 @@ def retrieve_usage(
 def retrieve_and_send_usage(
     hostname_or_ip: HttpUrl,
     usage_urls: list[str],
-    start_datetime: datetime,
-    end_datetime: datetime,
+    start_date: date,
+    end_date: date,
 ) -> None:
     """Retrieve usage data from Azure and send it to the API.
 
     Args:
         hostname_or_ip: Hostname or IP of the API.
         usage_urls: URLs to CSVs in blob storage.
-        start_datetime: The start of the date range that has been collected.
-        end_datetime: The inclusive end of the date range that has been collected.
+        start_date: The start of the date range that has been collected.
+        end_date: The inclusive end of the date range that has been collected.
     """
     usage_list = retrieve_usage(usage_urls)
 
-    send_usage(hostname_or_ip, usage_list, start_datetime.date(), end_datetime.date())
+    send_usage(hostname_or_ip, usage_list, start_date, end_date)
 
 
 def send_usage(

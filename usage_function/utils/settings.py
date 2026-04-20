@@ -3,9 +3,8 @@
 from functools import lru_cache
 from typing import Optional
 
-from pydantic import HttpUrl, field_validator, model_validator
+from pydantic import HttpUrl
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing_extensions import Self
 
 
 class Settings(BaseSettings):
@@ -17,17 +16,15 @@ class Settings(BaseSettings):
     USAGE_HISTORY_DAYS_OFFSET: int = 0  # ...starting from this many days ago
     LOG_LEVEL: str = "WARNING"  # The log level
     CM_MGMT_GROUP: Optional[str] = None  # The cost management function mgmt group
-    MGMT_GROUP: Optional[str] = None  # Either, the usage function mgmt group...
-    BILLING_ACCOUNT_ID: Optional[str] = (
-        None  # ...or the usage function billing account ID, with an optional...
+    BILLING_ACCOUNT_ID: str
+    BILLING_PROFILE_ID: Optional[str] = (
+        None  # To restrict to a particular billing profile.
     )
-    BILLING_PROFILE_ID: Optional[str] = None  # ...billing profile ID.
     CENTRAL_LOGGING_CONNECTION_STRING: Optional[str] = None
 
     # Settings for the settings class itself.
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
-    @field_validator("PRIVATE_KEY")
     def correct_start_and_end(cls, v: str) -> str:  # pylint: disable=no-self-argument
         """Validate the private key.
 
@@ -46,25 +43,6 @@ class Settings(BaseSettings):
                 'Expected key to end with "-----END OPENSSH PRIVATE KEY-----".'
             )
         return v
-
-    @model_validator(mode="after")
-    def mgmt_group_or_billing_id(self) -> Self:
-        """Require either a mgmt group name or a billing account ID."""
-        if (
-            not self.MGMT_GROUP
-            and not self.BILLING_ACCOUNT_ID
-            or (self.MGMT_GROUP and self.BILLING_ACCOUNT_ID)
-        ):
-            raise ValueError(
-                "Exactly one of MGMT_GROUP and BILLING_ACCOUNT_ID should be empty."
-            )
-
-        if self.BILLING_PROFILE_ID and not self.BILLING_ACCOUNT_ID:
-            raise ValueError(
-                "BILLING_PROFILE_ID is only valid with a BILLING_ACCOUNT_ID."
-            )
-
-        return self
 
 
 @lru_cache()
