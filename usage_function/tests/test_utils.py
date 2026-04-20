@@ -4,7 +4,7 @@ import csv
 import logging
 from datetime import date, datetime, timedelta
 from io import TextIOWrapper
-from typing import Final
+from typing import Final, BinaryIO
 from unittest import TestCase, main
 from unittest.mock import MagicMock, call, patch
 from uuid import UUID
@@ -271,9 +271,8 @@ class TestUsageUtils(TestCase):
         self.maxDiff = None
         # pylint: enable=invalid-name
 
-        def mock_readinto(open_file):
+        def mock_readinto(open_file: BinaryIO) -> None:
             """To replace that of the StorageStreamDownloader."""
-            # Open_file is already opened with mode "wb".
             text_stream = TextIOWrapper(
                 open_file, encoding="utf-8", newline="", write_through=True
             )
