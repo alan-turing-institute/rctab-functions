@@ -56,8 +56,11 @@ def get_all_usage(
     """
     client = CostManagementClient(CREDENTIALS)
 
+    scope = f"providers/Microsoft.Billing/billingAccounts/{billing_account_id}"
+    scope += f"/billingProfiles/{billing_profile_id}" if billing_profile_id else ""
+
     result = client.generate_cost_details_report.begin_create_operation(
-        scope=f"providers/Microsoft.Billing/billingAccounts/{billing_account_id}/billingProfiles/{billing_profile_id}",
+        scope=scope,
         parameters=GenerateCostDetailsReportRequestDefinition(
             time_period=CostDetailsTimePeriod(
                 start=start_date.isoformat(), end=end_date.isoformat()

@@ -7,6 +7,8 @@ from unittest import TestCase, main
 from unittest.mock import MagicMock, call, patch
 from uuid import UUID
 
+from azure.mgmt.costmanagement.models import GenerateCostDetailsReportRequestDefinition, CostDetailsTimePeriod, \
+    CostDetailsMetricType
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from pydantic import HttpUrl, TypeAdapter
@@ -42,14 +44,15 @@ class TestUsageUtils(TestCase):
     """Tests for the utils.usage module."""
 
     def test_get_all_usage_billing_account(self) -> None:
-        # Mock usage data, for when we patch usage_details.list
-        expected = [1, 2]
+        with patch("utils.usage.CostManagementClient") as mock_client:
+            mock_tmp = mock_client.return_value
+            mock_create = mock_tmp.generate_cost_details_report.begin_create_operation
+            mock_result = MagicMock()
+            mock_result.blobs = [MagicMock()]
+            mock_result.blobs[0].blob_link = "https://blob.url"
+            mock_create.return_value.result.return_value = mock_result
 
-        with patch("utils.usage.ConsumptionManagementClient") as mock_client:
-            mock_list_func = mock_client.return_value.usage_details.list
-            mock_list_func.return_value = expected
-
-            jan_tenth = datetime(2021, 1, 10, 1, 1, 1, 1)
+            jan_tenth = date(2021, 1, 10)
             actual = list(
                 utils.usage.get_all_usage(
                     jan_tenth - timedelta(days=5),
@@ -59,50 +62,44 @@ class TestUsageUtils(TestCase):
             )
 
             mock_client.assert_called_once_with(
-                credential=utils.usage.CREDENTIALS,
-                subscription_id=str(UUID(int=0)),
+                utils.usage.CREDENTIALS,
             )
 
-            mock_list_func.assert_called_once_with(
-                scope="/providers/Microsoft.Billing/billingAccounts/1:2",
-                filter="properties/usageEnd ge '2021-01-05T01:01:01Z' and "
-                "properties/usageEnd le '2021-01-10T01:01:01Z'",
-                metric="AmortizedCost",
+            mock_create.assert_called_once_with(
+                scope="providers/Microsoft.Billing/billingAccounts/1:2",
+                parameters=GenerateCostDetailsReportRequestDefinition(
+                    time_period=CostDetailsTimePeriod(
+                        start="2021-01-05", end="2021-01-10"
+                    ),
+                    metric=CostDetailsMetricType.AMORTIZED_COST_COST_DETAILS_METRIC_TYPE,)
             )
 
-        self.assertListEqual(expected, actual)
+        self.assertListEqual(["https://blob.url"], actual)
 
     def test_get_all_usage_billing_profile(self) -> None:
-        # Mock usage data, for when we patch usage_details.list
-        expected = [1, 2]
+        with patch("utils.usage.CostManagementClient") as mock_client:
+            mock_tmp = mock_client.return_value
+            mock_create = mock_tmp.generate_cost_details_report.begin_create_operation
+            mock_result = MagicMock()
+            mock_result.blobs = [MagicMock()]
+            mock_create.return_value.result.return_value = mock_result
 
-        with patch("utils.usage.ConsumptionManagementClient") as mock_client:
-            mock_list_func = mock_client.return_value.usage_details.list
-            mock_list_func.return_value = expected
-
-            jan_tenth = datetime(2021, 1, 10, 1, 1, 1, 1)
-            actual = list(
-                utils.usage.get_all_usage(
-                    jan_tenth - timedelta(days=5),
-                    jan_tenth,
-                    billing_account_id="1:2",
-                    billing_profile_id="3",
+            jan_tenth = date(2021, 1, 10)
+            utils.usage.get_all_usage(
+                jan_tenth - timedelta(days=5),
+                jan_tenth,
+                billing_account_id="A:B",
+                billing_profile_id="C"
                 )
-            )
 
-            mock_client.assert_called_once_with(
-                credential=utils.usage.CREDENTIALS,
-                subscription_id=str(UUID(int=0)),
+            mock_create.assert_called_once_with(
+                scope="providers/Microsoft.Billing/billingAccounts/A:B/billingProfiles/C",
+                parameters=GenerateCostDetailsReportRequestDefinition(
+                    time_period=CostDetailsTimePeriod(
+                        start="2021-01-05", end="2021-01-10"
+                    ),
+                    metric=CostDetailsMetricType.AMORTIZED_COST_COST_DETAILS_METRIC_TYPE,)
             )
-
-            mock_list_func.assert_called_once_with(
-                scope="/providers/Microsoft.Billing/billingAccounts/1:2/billingProfiles/3",
-                filter="properties/usageEnd ge '2021-01-05T01:01:01Z' and "
-                "properties/usageEnd le '2021-01-10T01:01:01Z'",
-                metric="AmortizedCost",
-            )
-
-        self.assertListEqual(expected, actual)
 
     def test_retrieve_and_send_usage(self) -> None:
         usage_dict = {
@@ -166,17 +163,60 @@ class TestUsageUtils(TestCase):
         )
 
         with patch("utils.usage.BearerAuth") as mock_auth:
-            # Patch POST so that it returns an error (300 status code).
-            with patch("requests.post") as mock_post:
-                mock_response = MagicMock()
-                mock_response.status_code = 300
-                mock_response.text = "some-mock-text"
-                mock_post.return_value = mock_response
+            with patch("utils.usage.retrieve_usage"):
 
-                sept_2021 = date(2021, 9, 1)
+                # Patch POST so that it returns an error (300 status code).
+                with patch("requests.post") as mock_post:
+                    mock_response = MagicMock()
+                    mock_response.status_code = 300
+                    mock_response.text = "some-mock-text"
+                    mock_post.return_value = mock_response
 
-                with patch("utils.usage.logging.warning") as mock_log:
-                    with self.assertRaises(RuntimeError):
+                    sept_2021 = date(2021, 9, 1)
+
+                    with patch("utils.usage.logging.warning") as mock_log:
+                        with self.assertRaises(RuntimeError):
+                            utils.usage.retrieve_and_send_usage(
+                                HTTP_ADAPTER.validate_python("https://123.123.123.123"),
+                                ["https://blob.url"],  # type: ignore
+                                sept_2021,
+                                sept_2021,
+                            )
+
+                        usage = models.Usage(**usage_dict)
+
+                        expected_data = (
+                            models.AllUsage(
+                                usage_list=[usage],
+                                start_date=sept_2021,
+                                end_date=sept_2021,
+                            )
+                            .model_dump_json()
+                            .encode("utf-8")
+                        )
+
+                        expected_call = call(
+                            "https://123.123.123.123/accounting/all-usage",
+                            data=expected_data,
+                            auth=mock_auth.return_value,
+                            timeout=60,
+                        )
+                        mock_post.assert_has_calls([expected_call] * 2)
+
+                        # Check the most recent call to logging.warning().
+                        mock_log.assert_called_with(
+                            "Failed to send Usage. Response code: %d. Response text: %s",
+                            300,
+                            "some-mock-text",
+                        )
+
+                # Patch POST so that it returns a success (200 status code).
+                with patch("requests.post") as mock_post:
+                    mock_response = MagicMock()
+                    mock_response.status_code = 200
+                    mock_post.return_value = mock_response
+
+                    with patch("usage.logging.warning"):
                         utils.usage.retrieve_and_send_usage(
                             HTTP_ADAPTER.validate_python("https://123.123.123.123"),
                             [example_usage_detail],  # type: ignore
@@ -184,65 +224,24 @@ class TestUsageUtils(TestCase):
                             sept_2021,
                         )
 
-                    usage = models.Usage(**usage_dict)
+                        usage = models.Usage(**usage_dict)
 
-                    expected_data = (
-                        models.AllUsage(
-                            usage_list=[usage],
-                            start_date=sept_2021,
-                            end_date=sept_2021,
+                        expected_data = (
+                            models.AllUsage(
+                                usage_list=[usage],
+                                start_date=sept_2021,
+                                end_date=sept_2021,
+                            )
+                            .model_dump_json()
+                            .encode("utf-8")
                         )
-                        .model_dump_json()
-                        .encode("utf-8")
-                    )
 
-                    expected_call = call(
-                        "https://123.123.123.123/accounting/all-usage",
-                        data=expected_data,
-                        auth=mock_auth.return_value,
-                        timeout=60,
-                    )
-                    mock_post.assert_has_calls([expected_call] * 2)
-
-                    # Check the most recent call to logging.warning().
-                    mock_log.assert_called_with(
-                        "Failed to send Usage. Response code: %d. Response text: %s",
-                        300,
-                        "some-mock-text",
-                    )
-
-            # Patch POST so that it returns a success (200 status code).
-            with patch("requests.post") as mock_post:
-                mock_response = MagicMock()
-                mock_response.status_code = 200
-                mock_post.return_value = mock_response
-
-                with patch("usage.logging.warning"):
-                    utils.usage.retrieve_and_send_usage(
-                        HTTP_ADAPTER.validate_python("https://123.123.123.123"),
-                        [example_usage_detail],  # type: ignore
-                        sept_2021,
-                        sept_2021,
-                    )
-
-                    usage = models.Usage(**usage_dict)
-
-                    expected_data = (
-                        models.AllUsage(
-                            usage_list=[usage],
-                            start_date=sept_2021,
-                            end_date=sept_2021,
+                        mock_post.assert_called_once_with(
+                            "https://123.123.123.123/accounting/all-usage",
+                            data=expected_data,
+                            auth=mock_auth.return_value,
+                            timeout=60,
                         )
-                        .model_dump_json()
-                        .encode("utf-8")
-                    )
-
-                    mock_post.assert_called_once_with(
-                        "https://123.123.123.123/accounting/all-usage",
-                        data=expected_data,
-                        auth=mock_auth.return_value,
-                        timeout=60,
-                    )
 
     def test_retrieve_usage_1(self) -> None:
         """Check the retrieve usage function sets amortised cost to 0."""

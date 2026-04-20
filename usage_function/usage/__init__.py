@@ -46,13 +46,11 @@ def main(mytimer: func.TimerRequest) -> None:
         logger.warning(
             "Requesting all usage data between %s and %s", start_date, end_date
         )
-        # usage_urls = [1]
         usage_urls = get_all_usage(
             start_date,
             end_date,
             billing_account_id=config.BILLING_ACCOUNT_ID,
             billing_profile_id=config.BILLING_PROFILE_ID,
-            # mgmt_group=config.MGMT_GROUP,
         )
 
         try:
