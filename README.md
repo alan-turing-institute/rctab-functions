@@ -8,5 +8,5 @@ You can find the full RCTab docs [here](https://rctab.readthedocs.io/), the onli
 In addition, each of the three functions has its own README:
 
 1. [usage_function](./usage_function/) collects data on how much each subscription has spent
-1. [status_function](./status_function/) collects data on how much each subscription has spent
+1. [status_function](./status_function/) collects data on the status of each subscription
 1. [controller_function](./controller_function/) turns subscriptions on/off according to their expiry data and remaining budget
