@@ -7,7 +7,6 @@ from unittest import TestCase, main
 from unittest.mock import MagicMock, call, patch
 from uuid import UUID
 
-from azure.mgmt.consumption.models import ModernUsageDetail
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from pydantic import HttpUrl, TypeAdapter
@@ -364,44 +363,6 @@ class TestUsageUtils(TestCase):
 
         self.assertListEqual([expected_item_1, expected_item_2], actual)
 
-    def test_retrieve_usage_modern_usage_detail(self) -> None:
-        """Check retrieve_usage can handle modern usage detail objects."""
-        modern_usage_1 = ModernUsageDetail()
-        modern_usage_1.id = "1"
-        modern_usage_1.subscription_guid = str(UUID(int=0))
-        modern_usage_1.date = date.today()
-        modern_usage_1.quantity = 1
-        modern_usage_1.cost_in_billing_currency = 1
-        modern_usage_1.unit_price = 1
-        modern_usage_1.effective_price = 1
-        modern_usage_1.billing_currency_code = "GBP"
-
-        modern_usage_2 = ModernUsageDetail()
-        modern_usage_2.id = "1"
-        modern_usage_2.subscription_guid = str(UUID(int=0))
-        modern_usage_2.date = date.today()
-        modern_usage_2.quantity = 1
-        modern_usage_2.cost_in_billing_currency = 1
-        modern_usage_2.unit_price = 1
-        modern_usage_2.effective_price = 1
-        modern_usage_2.billing_currency_code = "GBP"
-
-        actual = utils.usage.retrieve_usage([modern_usage_1, modern_usage_2])  # type: ignore[arg-type]
-        expected = models.Usage(
-            id="1",
-            subscription_id=UUID(int=0),
-            quantity=2,
-            cost=2,
-            date=date.today(),
-            amortised_cost=0,
-            total_cost=2,
-            unit_price=2,
-            effective_price=2,
-            billing_currency="GBP",
-        )
-
-        self.assertListEqual([expected], actual)
-
     def test_date_range(self) -> None:
         start = datetime(year=2021, month=11, day=1, hour=2)
         end = datetime(year=2021, month=11, day=2, hour=2)
@@ -445,41 +406,125 @@ class TestUsageUtils(TestCase):
         self.assertEqual(expected, existing_item)
 
     def test_usage_detail_to_usage_model(self) -> None:
-        """Check that we truncate dates."""
-        modern_usage = ModernUsageDetail()
-        modern_usage.id = "1"
-        modern_usage.subscription_guid = str(UUID(int=0))
+        cost_detail = {
+            "\ufeffinvoiceId": "H123",
+            "previousInvoiceId": "",
+            "billingAccountId": "00000000-0000-0000-0000-000000000058",
+            "billingAccountName": "",
+            "billingProfileId": "O1O1-AAAA-BBB-CCC",
+            "billingProfileName": "My Billing Profile",
+            "invoiceSectionId": "00000000-0000-0000-0000-000000000059",
+            "invoiceSectionName": "My Invoice Section",
+            "resellerName": "",
+            "resellerMpnId": "",
+            "costCenter": "AB  ",
+            "billingPeriodEndDate": "01/13/2026",
+            "billingPeriodStartDate": "01/13/2026",
+            "servicePeriodEndDate": "01/22/2026",
+            "servicePeriodStartDate": "01/22/2026",
+            "date": "01/25/2026",
+            "serviceFamily": "SaaS",
+            "productOrderId": "00000000-0000-0000-0000-00000000005a",
+            "productOrderName": "Some Product Order",
+            "consumedService": "",
+            "meterId": "",
+            "meterName": "",
+            "meterCategory": "SaaS",
+            "meterSubCategory": "My Sub Category",
+            "meterRegion": "",
+            "ProductId": "ABC123",
+            "ProductName": "Some Product Name",
+            "SubscriptionId": "00000000-0000-0000-0000-00000000005b",
+            "subscriptionName": "My Subscription Name",
+            "publisherType": "Marketplace",
+            "publisherId": "21212121",
+            "publisherName": "Some Publisher Name",
+            "resourceGroupName": "my-resource-group",
+            "ResourceId": (
+                "/subscriptions/00000000-0000-0000-0000-00000000005b/"
+                "resourceGroups/my-resource-group/providers/"
+                "Microsoft.something/resources/my-resource"
+            ),
+            "resourceLocation": "",
+            "location": "",
+            "effectivePrice": "100",
+            "quantity": "1",
+            "unitOfMeasure": "",
+            "chargeType": "Purchase",
+            "billingCurrency": "GBP",
+            "pricingCurrency": "GBP",
+            "costInBillingCurrency": "100",
+            "costInPricingCurrency": "100",
+            "costInUsd": "120",
+            "paygCostInBillingCurrency": "100",
+            "paygCostInUsd": "120",
+            "exchangeRatePricingToBilling": "1",
+            "exchangeRateDate": "",
+            "isAzureCreditEligible": "False",
+            "serviceInfo1": "",
+            "serviceInfo2": "",
+            "additionalInfo": "",
+            "tags": "",
+            "PayGPrice": "100",
+            "frequency": "Some frequency",
+            "term": "",
+            "reservationId": "",
+            "reservationName": "",
+            "pricingModel": "Some pricing",
+            "unitPrice": "100",
+            "costAllocationRuleName": "",
+            "benefitId": "",
+            "benefitName": "",
+            "provider": "Azure",
+        }
 
-        # Note we truncate these dates.
-        modern_usage.date = datetime(year=2021, month=11, day=1, hour=2)
-        modern_usage.billing_period_start_date = datetime(
-            year=2021, month=11, day=2, hour=2
-        )
-        modern_usage.billing_period_end_date = datetime(
-            year=2021, month=11, day=3, hour=2
-        )
-
-        modern_usage.quantity = 1
-        modern_usage.cost_in_billing_currency = 1
-        modern_usage.unit_price = 1
-        modern_usage.effective_price = 1
-        modern_usage.billing_currency_code = "GBP"
-
-        converted = utils.usage.usage_detail_to_usage_model(modern_usage)
+        converted = utils.usage.usage_row_to_usage_model(cost_detail)
         self.assertEqual(
             models.Usage(
-                id="1",
-                subscription_id=UUID(int=0),
-                date=date(year=2021, month=11, day=1),
-                billing_period_start_date=datetime(year=2021, month=11, day=2),
-                billing_period_end_date=datetime(year=2021, month=11, day=3),
-                total_cost=1,
-                cost=1,
+                id="",
+                subscription_id=UUID(int=91),
+                date=date(year=2026, month=1, day=25),
+                billing_account_id="00000000-0000-0000-0000-000000000058",
+                billing_account_name="",
+                billing_profile_id="O1O1-AAAA-BBB-CCC",
+                billing_profile_name="My Billing Profile",
+                billing_period_start_date=datetime(year=2026, month=1, day=13),
+                billing_period_end_date=datetime(year=2026, month=1, day=13),
+                subscription_name="My Subscription Name",
+                product="ABC123-Some Product Name",
+                meter_id="--SaaS-My Sub Category-",
+                total_cost=100,
+                cost=100,
                 amortised_cost=0,
-                unit_price=1,
+                unit_price=100,
                 quantity=1,
-                effective_price=1,
+                effective_price=100,
                 billing_currency="GBP",
+                resource_location="",
+                consumed_service="",
+                resource_id=(
+                    "/subscriptions/00000000-0000-0000-0000-00000000005b/"
+                    "resourceGroups/my-resource-group/providers/"
+                    "Microsoft.something/resources/my-resource"
+                ),
+                service_info1="",
+                service_info2="",
+                additional_info="",
+                invoice_section="00000000-0000-0000-0000-000000000059-My Invoice Section",
+                cost_center="AB  ",
+                resource_group="my-resource-group",
+                reservation_id="",
+                reservation_name="",
+                product_order_id="00000000-0000-0000-0000-00000000005a",
+                offer_id=None,
+                is_azure_credit_eligible=False,
+                term="",
+                publisher_name="Some Publisher Name",
+                publisher_type="Marketplace",
+                plan_name=None,
+                charge_type="Purchase",
+                frequency="Some frequency",
+                monthly_upload=None,
             ),
             converted,
         )

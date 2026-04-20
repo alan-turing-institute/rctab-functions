@@ -129,7 +129,7 @@ def us_date_to_iso(us_date: str) -> str:
     return us_date[6:10] + "-" + us_date[0:2] + "-" + us_date[3:5]
 
 
-def usage_detail_to_usage_model(item_dict: dict[str, Any]) -> models.Usage:
+def usage_row_to_usage_model(item_dict: dict[str, Any]) -> models.Usage:
     """Convert a Legacy or Modern UsageDetail to a Usage model."""
     # item_dict = dict(vars(detail))
 
@@ -267,7 +267,7 @@ def retrieve_usage(
             reader = csv.DictReader(f)
 
             for row in reader:
-                all_items.append(usage_detail_to_usage_model(row))
+                all_items.append(usage_row_to_usage_model(row))
 
     logging.warning(
         "%d Usage objects retrieved in %s.",
