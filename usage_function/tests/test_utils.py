@@ -4,7 +4,7 @@ import csv
 import logging
 from datetime import date, datetime, timedelta
 from io import TextIOWrapper
-from typing import Final, BinaryIO
+from typing import BinaryIO, Final
 from unittest import TestCase, main
 from unittest.mock import MagicMock, call, patch
 from uuid import UUID
