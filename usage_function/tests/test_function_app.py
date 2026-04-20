@@ -32,7 +32,10 @@ class TestUsage(TestCase):
 
     def test_main(self) -> None:
         with patch("usage.get_all_usage") as mock_get_all_usage:
-            mock_get_all_usage.return_value = ["https://blob.url.1", "https://blob.url.2"]
+            mock_get_all_usage.return_value = [
+                "https://blob.url.1",
+                "https://blob.url.2",
+            ]
 
             with patch("usage.datetime") as mock_datetime:
                 now = datetime(year=2022, month=7, day=10, hour=10, minute=5, second=2)
@@ -67,16 +70,16 @@ class TestUsage(TestCase):
                         )
 
                         mock_get_all_usage.assert_called_once_with(
-                                    eighth,
-                                    ninth,
-                                    billing_account_id="111111",
-                                    billing_profile_id=None,
+                            eighth,
+                            ninth,
+                            billing_account_id="111111",
+                            billing_profile_id=None,
                         )
                         mock_retrieve_and_send_usage.assert_called_once_with(
-                                    HTTP_ADAPTER.validate_python("https://my.host"),
-                                    ["https://blob.url.1", "https://blob.url.2"],
-                                    eighth,
-                                    ninth,
+                            HTTP_ADAPTER.validate_python("https://my.host"),
+                            ["https://blob.url.1", "https://blob.url.2"],
+                            eighth,
+                            ninth,
                         )
 
 
