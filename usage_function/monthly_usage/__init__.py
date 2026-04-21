@@ -87,7 +87,6 @@ def main(mytimer: func.TimerRequest) -> None:
             date_from,
             date_to,
             billing_account_id=config.BILLING_ACCOUNT_ID,
-            mgmt_group=config.MGMT_GROUP,
         )
 
         try:

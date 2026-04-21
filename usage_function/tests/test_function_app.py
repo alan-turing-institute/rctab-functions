@@ -32,7 +32,10 @@ class TestUsage(TestCase):
 
     def test_main(self) -> None:
         with patch("usage.get_all_usage") as mock_get_all_usage:
-            mock_get_all_usage.return_value = ["usage1", "usage2"]
+            mock_get_all_usage.return_value = [
+                "https://blob.url.1",
+                "https://blob.url.2",
+            ]
 
             with patch("usage.datetime") as mock_datetime:
                 now = datetime(year=2022, month=7, day=10, hour=10, minute=5, second=2)
@@ -50,7 +53,7 @@ class TestUsage(TestCase):
                             "-----END OPENSSH PRIVATE KEY-----",
                             USAGE_HISTORY_DAYS=2,
                             USAGE_HISTORY_DAYS_OFFSET=1,
-                            MGMT_GROUP="mgmt-group",
+                            BILLING_ACCOUNT_ID="111111",
                             _env_file=None,
                         )
 
@@ -66,39 +69,17 @@ class TestUsage(TestCase):
                             year=2022, month=7, day=9, hour=0, minute=0, second=0
                         )
 
-                        mock_get_all_usage.assert_has_calls(
-                            [
-                                call(
-                                    ninth,
-                                    ninth,
-                                    billing_account_id=None,
-                                    billing_profile_id=None,
-                                    mgmt_group="mgmt-group",
-                                ),
-                                call(
-                                    eighth,
-                                    eighth,
-                                    billing_account_id=None,
-                                    billing_profile_id=None,
-                                    mgmt_group="mgmt-group",
-                                ),
-                            ]
+                        mock_get_all_usage.assert_called_once_with(
+                            eighth,
+                            ninth,
+                            billing_account_id="111111",
+                            billing_profile_id=None,
                         )
-                        mock_retrieve_and_send_usage.assert_has_calls(
-                            [
-                                call(
-                                    HTTP_ADAPTER.validate_python("https://my.host"),
-                                    ["usage1", "usage2"],
-                                    ninth,
-                                    ninth,
-                                ),
-                                call(
-                                    HTTP_ADAPTER.validate_python("https://my.host"),
-                                    ["usage1", "usage2"],
-                                    eighth,
-                                    eighth,
-                                ),
-                            ]
+                        mock_retrieve_and_send_usage.assert_called_once_with(
+                            HTTP_ADAPTER.validate_python("https://my.host"),
+                            ["https://blob.url.1", "https://blob.url.2"],
+                            eighth,
+                            ninth,
                         )
 
 
@@ -141,7 +122,6 @@ class TestMonthlyUsage(TestCase):
                 datetime(2024, 1, 1),
                 datetime(2024, 1, 2),
                 billing_account_id="88111111",
-                mgmt_group=None,
             )
             mock_retrieve.assert_called_once()
             mock_send.assert_called_once()

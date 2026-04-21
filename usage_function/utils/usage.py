@@ -1,19 +1,22 @@
 """Utils for collecting and sending Azure usage data."""
 
 import copy
+import csv
 import logging
 from datetime import date, datetime, timedelta
 from functools import lru_cache
-from time import sleep
-from typing import Generator, Iterable, Optional, cast
-from uuid import UUID
+from typing import Any, Generator, Optional
 
 import requests
 from azure.identity import DefaultAzureCredential
-from azure.mgmt.consumption import ConsumptionManagementClient
-from azure.mgmt.consumption.models import ModernUsageDetail, UsageDetail
+from azure.mgmt.costmanagement import CostManagementClient
+from azure.mgmt.costmanagement.models import (
+    CostDetailsMetricType,
+    CostDetailsTimePeriod,
+    GenerateCostDetailsReportRequestDefinition,
+)
+from azure.storage.blob import BlobClient
 from pydantic import HttpUrl
-from pydantic_core import ValidationError
 from rctab_models import models
 
 from utils.auth import BearerAuth
@@ -38,63 +41,36 @@ def date_range(
 
 
 def get_all_usage(
-    # start_time: datetime,
-    # end_time: datetime,
+    start_date: date,
+    end_date: date,
     billing_account_id: str,
     billing_profile_id: Optional[str] = None,
-    # mgmt_group: Optional[str] = None,
-) -> Iterable[UsageDetail]:
+) -> list[str]:
     """Get Azure usage data for a subscription between start_time and end_time.
 
     Args:
-        start_time: Start time.
-        end_time: End time.
+        start_date: Start date.
+        end_date: End date (inclusive).
         billing_account_id: Billing Account ID.
         billing_profile_id: Billing Profile ID.
-        mgmt_group: The name of a management group.
     """
-    # It doesn't matter which subscription ID we use for this bit.
-    consumption_client = ConsumptionManagementClient(
-        credential=CREDENTIALS, subscription_id=str(UUID(int=0))
-    )
+    client = CostManagementClient(CREDENTIALS)
 
-    # Note that the data we get back seems to ignore the time part
-    # and requesting data between 2023-01-01T00:00:00Z and 2023-01-01T00:00:00Z
-    # will return data for the whole of 2023-01-01.
-    # filter_from = "properties/usageEnd ge '{}'".format(
-    #     start_time.strftime("%Y-%m-%dT%H:%M:%SZ")
-    # )
-    # filter_to = "properties/usageEnd le '{}'".format(
-    #     end_time.strftime("%Y-%m-%dT%H:%M:%SZ")
-    # )
-    # filter_expression = "{} and {}".format(filter_from, filter_to)
-    filter_expression = None
+    scope = f"providers/Microsoft.Billing/billingAccounts/{billing_account_id}"
+    scope += f"/billingProfiles/{billing_profile_id}" if billing_profile_id else ""
 
-    scope_expression = ""
-    # if billing_account_id:
-    scope_expression = (
-        f"/providers/Microsoft.Billing/billingAccounts/{billing_account_id}"
-    )
-    if billing_profile_id:
-        scope_expression += f"/billingProfiles/{billing_profile_id}"
-    # elif mgmt_group:
-    #     scope_expression = (
-    #         f"/providers/Microsoft.Management/managementGroups/{mgmt_group}"
-    #     )
+    result = client.generate_cost_details_report.begin_create_operation(
+        scope=scope,
+        parameters=GenerateCostDetailsReportRequestDefinition(
+            time_period=CostDetailsTimePeriod(
+                start=start_date.isoformat(), end=end_date.isoformat()
+            ),
+            metric=CostDetailsMetricType.AMORTIZED_COST_COST_DETAILS_METRIC_TYPE,
+        ),
+    ).result()
 
-    # Actual Cost - Provides data to reconcile with your monthly bill.
-    # Amortized Cost - This dataset is similar to the Actual Cost dataset except
-    # that the EffectivePrice for the usage that gets reservation discount is
-    # the prorated cost of the reservation (instead of being zero).
-    metric_expression = "AmortizedCost"
-
-    data = consumption_client.usage_details.list(
-        scope=scope_expression, filter=filter_expression, metric=metric_expression
-    )
-
-    # Azure SDK typing here is too broad/inaccurate: list() actually iterates
-    # UsageDetail items (legacy or modern), not UsageDetailsListResult wrappers.
-    return cast(Iterable[UsageDetail], data)
+    assert result.blobs, "begin_create_operation().result() contained no blobs"
+    return [b.blob_link for b in result.blobs if b.blob_link]
 
 
 def combine_items(item_to_update: models.Usage, other_item: models.Usage) -> None:
@@ -151,39 +127,114 @@ def compress_items(items: list[models.Usage]) -> list[models.Usage]:
     return ret_list
 
 
-def usage_detail_to_usage_model(detail: UsageDetail) -> models.Usage:
+def us_date_to_iso(us_date: str) -> str:
+    """Convert a '04/17/1990' string to '1990-04-17'."""
+    return us_date[6:10] + "-" + us_date[0:2] + "-" + us_date[3:5]
+
+
+def usage_row_to_usage_model(item_dict: dict[str, Any]) -> models.Usage:
     """Convert a Legacy or Modern UsageDetail to a Usage model."""
-    item_dict = dict(vars(detail))
+    # item_dict = dict(vars(detail))
 
-    if isinstance(detail, ModernUsageDetail):
-        # Align modern usage naming with the legacy-shaped rctab Usage model.
-        # We intentionally use billed local currency cost, not USD cost.
-        item_dict["subscription_id"] = item_dict["subscription_guid"]
-        item_dict["cost"] = item_dict["cost_in_billing_currency"]
-        item_dict["billing_currency"] = item_dict["billing_currency_code"]
-        item_dict["invoice_section"] = item_dict.get("invoice_section_name")
-
-    # When AmortizedCost metric is being used, the cost and effective_price values
-    # for reserved instances are not zero, thus the cost value is moved to
-    # amortised_cost
-    item_dict["total_cost"] = item_dict["cost"]
-
-    try:
-        usage_item = models.Usage(**item_dict)
-    except ValidationError:
-        logging.warning(
-            "We presume that dates are midnight but date is: %s", item_dict["date"]
-        )
-        item_dict["date"] = item_dict["date"].replace(
-            hour=0, minute=0, second=0, microsecond=0
-        )
-        item_dict["billing_period_start_date"] = item_dict[
-            "billing_period_start_date"
-        ].replace(hour=0, minute=0, second=0, microsecond=0)
-        item_dict["billing_period_end_date"] = item_dict[
-            "billing_period_end_date"
-        ].replace(hour=0, minute=0, second=0, microsecond=0)
-        usage_item = models.Usage(**item_dict)
+    # Align modern naming with the legacy-shaped rctab Usage model.
+    # We intentionally use billed local currency cost, not USD cost.
+    # item_dict["subscription_id"] = item_dict["subscription_guid"]
+    # item_dict["cost"] = item_dict["cost_in_billing_currency"]
+    # item_dict["billing_currency"] = item_dict["billing_currency_code"]
+    # item_dict["invoice_section"] = item_dict.get("invoice_section_name")
+    #
+    # # When AmortizedCost metric is being used, the cost and effective_price values
+    # # for reserved instances are not zero, thus the cost value is moved to
+    # # amortised_cost
+    # item_dict["total_cost"] = item_dict["cost"]
+    #
+    # try:
+    #     usage_item = models.Usage(**item_dict)
+    # except ValidationError:
+    #     logging.warning(
+    #         "We presume that dates are midnight but date is: %s", item_dict["date"]
+    #     )
+    #     item_dict["date"] = item_dict["date"].replace(
+    #         hour=0, minute=0, second=0, microsecond=0
+    #     )
+    #     item_dict["billing_period_start_date"] = item_dict[
+    #         "billing_period_start_date"
+    #     ].replace(hour=0, minute=0, second=0, microsecond=0)
+    #     item_dict["billing_period_end_date"] = item_dict[
+    #         "billing_period_end_date"
+    #     ].replace(hour=0, minute=0, second=0, microsecond=0)
+    #     usage_item = models.Usage(**item_dict)
+    billing_currency = item_dict["billingCurrency"]
+    # assert billing_currency == "GBP", f"Expected GBP but got {billing_currency}"
+    # if not item_dict["billingPeriodStartDate"]:
+    #     pass
+    usage_item = models.Usage(
+        id="",  # todo
+        name=None,
+        type=None,
+        tags=None,
+        billing_account_id=item_dict["billingAccountId"],
+        billing_account_name=item_dict["billingAccountName"],
+        billing_period_start_date=(
+            us_date_to_iso(item_dict["billingPeriodStartDate"])
+            if item_dict["billingPeriodStartDate"]
+            else None
+        ),
+        billing_period_end_date=(
+            us_date_to_iso(item_dict["billingPeriodEndDate"])
+            if item_dict["billingPeriodEndDate"]
+            else None
+        ),
+        billing_profile_id=item_dict["billingProfileId"],
+        billing_profile_name=item_dict["billingProfileName"],
+        account_owner_id=None,
+        account_name=None,
+        subscription_id=item_dict["SubscriptionId"],
+        subscription_name=item_dict["subscriptionName"],
+        date=us_date_to_iso(item_dict["date"]),
+        product=item_dict["ProductId"] + "-" + item_dict["ProductName"],
+        part_number=None,
+        meter_id=item_dict["meterId"]
+        + "-"
+        + item_dict["meterName"]
+        + "-"
+        + item_dict["meterCategory"]
+        + "-"
+        + item_dict["meterSubCategory"]
+        + "-"
+        + item_dict["meterRegion"],
+        quantity=item_dict["quantity"],
+        effective_price=item_dict["effectivePrice"],
+        cost=item_dict["costInBillingCurrency"],
+        amortised_cost=None,
+        total_cost=item_dict["costInBillingCurrency"],
+        unit_price=item_dict["unitPrice"],
+        billing_currency=billing_currency,
+        resource_location=item_dict["resourceLocation"],
+        consumed_service=item_dict["consumedService"],
+        resource_id=item_dict["ResourceId"],
+        resource_name=None,
+        service_info1=item_dict["serviceInfo1"],
+        service_info2=item_dict["serviceInfo2"],
+        additional_info=item_dict["additionalInfo"],
+        invoice_section=item_dict["invoiceSectionId"]
+        + "-"
+        + item_dict["invoiceSectionName"],
+        cost_center=item_dict["costCenter"],
+        resource_group=item_dict["resourceGroupName"],
+        reservation_id=item_dict["reservationId"],
+        reservation_name=item_dict["reservationName"],
+        product_order_id=item_dict["productOrderId"],
+        offer_id=None,
+        is_azure_credit_eligible=item_dict["isAzureCreditEligible"],
+        term=item_dict["term"],
+        publisher_name=item_dict["publisherName"],
+        publisher_type=item_dict["publisherType"],
+        plan_name=None,
+        charge_type=item_dict["chargeType"],
+        frequency=item_dict["frequency"],
+        monthly_upload=None,
+    )
 
     if usage_item.reservation_id:
         usage_item.amortised_cost = usage_item.cost
@@ -195,9 +246,7 @@ def usage_detail_to_usage_model(detail: UsageDetail) -> models.Usage:
 
 
 def retrieve_usage(
-    usage_data: Iterable[UsageDetail],
-    start_date: date,
-    end_date: date,
+    usage_urls: list[str],
 ) -> list[models.Usage]:
     """Retrieve usage data from Azure.
 
@@ -212,47 +261,43 @@ def retrieve_usage(
     all_items: list[models.Usage] = []
     started_processing_at = datetime.now()
 
-    for i, item in enumerate(usage_data):
-        if i % 200 == 0:
-            logging.warning("Requesting item %d", i)
+    for url in usage_urls:
+        blob = BlobClient.from_blob_url(url)
+        with open("cost_details_report.csv", "wb") as f:
+            blob.download_blob().readinto(f)
 
-        if i > 0 and i % 1000 == 0:
-            # There is a rate limit.
-            sleep(60)
+        with open("cost_details_report.csv", "r", encoding="utf-8", newline="") as f:
+            reader = csv.DictReader(f)
 
-        item_dict = dict(vars(item))
-        if start_date <= item_dict["date"] <= end_date:
-            # We have to manually filter, for the time being.
-            all_items.append(usage_detail_to_usage_model(item))
-
-    combined_items = compress_items(all_items)
+            for row in reader:
+                all_items.append(usage_row_to_usage_model(row))
 
     logging.warning(
         "%d Usage objects retrieved in %s.",
-        len(combined_items),
+        len(all_items),
         datetime.now() - started_processing_at,
     )
 
-    return combined_items
+    return all_items
 
 
 def retrieve_and_send_usage(
     hostname_or_ip: HttpUrl,
-    usage_data: Iterable[UsageDetail],
-    start_datetime: datetime,
-    end_datetime: datetime,
+    usage_urls: list[str],
+    start_date: date,
+    end_date: date,
 ) -> None:
     """Retrieve usage data from Azure and send it to the API.
 
     Args:
         hostname_or_ip: Hostname or IP of the API.
-        usage_data: Usage data object.
-        start_datetime: The start of the date range that has been collected.
-        end_datetime: The inclusive end of the date range that has been collected.
+        usage_urls: URLs to CSVs in blob storage.
+        start_date: The start of the date range that has been collected.
+        end_date: The inclusive end of the date range that has been collected.
     """
-    usage_list = retrieve_usage(usage_data, start_datetime, end_datetime)
+    usage_list = retrieve_usage(usage_urls)
 
-    send_usage(hostname_or_ip, usage_list, start_datetime.date(), end_datetime.date())
+    send_usage(hostname_or_ip, usage_list, start_date, end_date)
 
 
 def send_usage(
