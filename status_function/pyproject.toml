@@ -1,8 +1,10 @@
-[tool.poetry]
+[project]
 name = "rctab-status-function"
 version = "0.1.0"  # Do not change
 description = "Function app to collect status data"
 authors = []
+
+[tool.poetry]
 packages = [
     {include = "status"},
 ]
