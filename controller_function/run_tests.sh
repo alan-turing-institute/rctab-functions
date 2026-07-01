@@ -17,7 +17,9 @@ status=$((status+$?))
 # using (something close to) Google's default config
 echo "Running pylint..."
 # shellcheck disable=SC2038
-find . -type f -name "*.py" ! \( -path "./.venv/*" \) |
+find . -type f -name "*.py" \
+    ! \( -path "./.poetry/*" \) \
+    ! \( -path "./.venv/*" \) |
     xargs pylint --rcfile=tests/pylintrc
 status=$((status+$?))
 
