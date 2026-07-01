@@ -2,8 +2,7 @@
 *
 
 # ...except for the bare necessities
-!poetry.lock
-!pyproject.toml
+!requirements.txt
 !host.json
 !usage/*.py
 !usage/function.json
