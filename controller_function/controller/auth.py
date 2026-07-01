@@ -1,6 +1,6 @@
 """Authentication between status package and API web app."""
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 
 import jwt
 import requests
@@ -34,7 +34,7 @@ class BearerAuth(requests.auth.AuthBase):
     def create_access_token(self) -> str:
         """Create an access token."""
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-        expire = datetime.utcnow() + access_token_expires
+        expire = datetime.now(UTC) + access_token_expires
         token_claims = {"sub": "controller-app", "exp": expire}
 
         return jwt.encode(
