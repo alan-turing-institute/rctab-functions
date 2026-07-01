@@ -10,7 +10,7 @@ status=0
 source .venv/bin/activate
 
 echo "Running isort..."
-isort . --profile=black
+isort . --profile=black --skip .poetry --skip .venv
 status=$((status+$?))
 
 # Find all .py files (ignoring .venv) and check their code style with pylint,

@@ -11,7 +11,7 @@ source .venv/bin/activate
 
 # Run here rather than as a pre-commit hook so that local imports happen last
 echo "Running isort..."
-isort . --profile=black
+isort . --profile=black --skip .poetry --skip .venv
 status=$((status+$?))
 
 # Find all .py files (ignoring .venv) and check their code style with pylint,
