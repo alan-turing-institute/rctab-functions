@@ -1,8 +1,10 @@
-[tool.poetry]
+[project]
 name = "rctab-usage-function"
 version = "0.1.0"  # Do not change
 description = "Function app to collect usage data"
 authors = []
+
+[tool.poetry]
 packages = [
     {include = "usage"},
     {include = "utils"},

@@ -188,7 +188,6 @@ class TestStatus(TestCase):
             principal_type = "Blah"
             role_assignment = MODELS_MODULE.RoleAssignment(
                 role_definition_id=str(UUID(int=10)),
-                role_name="Contributor",
                 principal_id=str(UUID(int=100)),
                 principal_type="Blah",
             )

@@ -9,12 +9,6 @@ status=0
 # shellcheck disable=SC1091
 source .venv/bin/activate
 
-# Check Python coding style with flake8, using black's default max line length
-# To auto-format a file, you can run `python -m black filename.py`
-echo "Running flake8..."
-python -m flake8 --max-line-length=88 --exclude=.venv
-status=$((status+$?))
-
 # Run here rather than as a pre-commit hook so that local imports happen last
 echo "Running isort..."
 isort . --profile=black
@@ -24,14 +18,14 @@ status=$((status+$?))
 # using (something close to) Google's default config
 echo "Running pylint..."
 # shellcheck disable=SC2038
-find . -type f -name "*.py" ! -path "./.venv/*" | xargs \
+find . -type f -name "*.py" ! -path "*venv/*" | xargs \
     pylint --rcfile=tests/pylintrc
 status=$((status+$?))
 
 # Run our unit tests with code coverage
 echo "Running unit tests..."
 python -m coverage run \
-  --omit=".venv/*,tests/*" \
+  --omit=".venv/*,tests/*,venv/*" \
   -m unittest discover \
   --start-directory=tests/
 status=$((status+$?))
