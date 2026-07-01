@@ -6,7 +6,7 @@ Attributes:
         value is 5.
 """
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 import jwt
 import requests
@@ -55,7 +55,7 @@ class BearerAuth(requests.auth.AuthBase):
             The access token.
         """
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-        expire = datetime.utcnow() + access_token_expires
+        expire = datetime.now(UTC) + access_token_expires
         token_claims = {"sub": "status-app", "exp": expire}
         return jwt.encode(token_claims, self.private_key, algorithm=ALGORITHM)
 
