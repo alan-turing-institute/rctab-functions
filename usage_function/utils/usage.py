@@ -6,6 +6,7 @@ import logging
 from datetime import date, datetime, timedelta
 from functools import lru_cache
 from typing import Any, Generator, Optional
+from uuid import UUID
 
 import requests
 from azure.identity import DefaultAzureCredential
@@ -134,42 +135,10 @@ def us_date_to_iso(us_date: str) -> str:
 
 def usage_row_to_usage_model(item_dict: dict[str, Any]) -> models.Usage:
     """Convert a Legacy or Modern UsageDetail to a Usage model."""
-    # item_dict = dict(vars(detail))
-
-    # Align modern naming with the legacy-shaped rctab Usage model.
-    # We intentionally use billed local currency cost, not USD cost.
-    # item_dict["subscription_id"] = item_dict["subscription_guid"]
-    # item_dict["cost"] = item_dict["cost_in_billing_currency"]
-    # item_dict["billing_currency"] = item_dict["billing_currency_code"]
-    # item_dict["invoice_section"] = item_dict.get("invoice_section_name")
-    #
-    # # When AmortizedCost metric is being used, the cost and effective_price values
-    # # for reserved instances are not zero, thus the cost value is moved to
-    # # amortised_cost
-    # item_dict["total_cost"] = item_dict["cost"]
-    #
-    # try:
-    #     usage_item = models.Usage(**item_dict)
-    # except ValidationError:
-    #     logging.warning(
-    #         "We presume that dates are midnight but date is: %s", item_dict["date"]
-    #     )
-    #     item_dict["date"] = item_dict["date"].replace(
-    #         hour=0, minute=0, second=0, microsecond=0
-    #     )
-    #     item_dict["billing_period_start_date"] = item_dict[
-    #         "billing_period_start_date"
-    #     ].replace(hour=0, minute=0, second=0, microsecond=0)
-    #     item_dict["billing_period_end_date"] = item_dict[
-    #         "billing_period_end_date"
-    #     ].replace(hour=0, minute=0, second=0, microsecond=0)
-    #     usage_item = models.Usage(**item_dict)
     billing_currency = item_dict["billingCurrency"]
-    # assert billing_currency == "GBP", f"Expected GBP but got {billing_currency}"
-    # if not item_dict["billingPeriodStartDate"]:
-    #     pass
+    subscription_id = item_dict["SubscriptionId"]
     usage_item = models.Usage(
-        id="",  # todo
+        id="",
         name=None,
         type=None,
         tags=None,
@@ -189,7 +158,7 @@ def usage_row_to_usage_model(item_dict: dict[str, Any]) -> models.Usage:
         billing_profile_name=item_dict["billingProfileName"],
         account_owner_id=None,
         account_name=None,
-        subscription_id=item_dict["SubscriptionId"],
+        subscription_id=subscription_id if subscription_id else UUID(int=0),
         subscription_name=item_dict["subscriptionName"],
         date=us_date_to_iso(item_dict["date"]),
         product=item_dict["ProductId"] + "-" + item_dict["ProductName"],
