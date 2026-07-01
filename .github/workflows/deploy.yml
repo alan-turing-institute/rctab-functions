@@ -65,7 +65,7 @@ jobs:
       - name: Build and push function
         run: |
           poetry install
-          poetry export -f requirements.txt --output requirements.txt --only main
+          poetry export -f requirements.txt --output requirements.txt --only main --without-hashes
           docker build . -t turingrc/rctab-${{ matrix.function }}:${{ env.CURRENT_RELEASE }} -t turingrc/rctab-${{ matrix.function }}:${{ env.MAJOR_VERSION_NUMBER }}.${{ env.TAG_SUFFIX }}
           docker push --all-tags turingrc/rctab-${{ matrix.function }}
 
