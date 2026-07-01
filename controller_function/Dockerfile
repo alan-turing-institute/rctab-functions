@@ -9,4 +9,5 @@ WORKDIR /home/site/wwwroot/
 
 # Create with poetry export -f requirements.txt --output requirements.txt --only main
 COPY requirements.txt ./
+RUN apt install git
 RUN python -m pip install --target .python_packages/lib/site-packages --requirement requirements.txt --no-deps
