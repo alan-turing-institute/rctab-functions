@@ -23,4 +23,7 @@ jobs:
 
       - name: Build function
         run: |
-          docker build ${{ matrix.function }}_function
+          poetry install
+          poetry export -f requirements.txt --output requirements.txt --only main
+          docker build .
+        working-directory: ${{ matrix.function }}_function
