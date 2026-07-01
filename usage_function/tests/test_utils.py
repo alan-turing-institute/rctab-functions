@@ -386,6 +386,13 @@ class TestUsageUtils(TestCase):
             converted,
         )
 
+    def test_usage_detail_to_usage_model_2(self) -> None:
+        """subscriptionId may be missing"""
+        result = usage_row_to_usage_model(
+            {**self.cost_detail, **{"SubscriptionId": ""}}
+        )
+        self.assertEqual(result.subscription_id, UUID(int=0))
+
     def test_us_to_iso_date(self) -> None:
         self.assertEqual("2021-12-24", utils.usage.us_date_to_iso("12/24/2021"))
 
