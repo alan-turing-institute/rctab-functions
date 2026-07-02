@@ -58,4 +58,3 @@ jobs:
         run: |
           poetry run ./run_tests.sh
         working-directory: controller_function
-
