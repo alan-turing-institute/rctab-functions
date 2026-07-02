@@ -22,6 +22,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Bootstrap poetry
+        shell: bash
+        run: |
+          python -m ensurepip
+          python -m pip install --upgrade pip
+          python -m pip install poetry
+
       - name: Get release tag
         id: current_release
         run: |
@@ -43,7 +55,6 @@ jobs:
         run: |
           echo "TAG_SUFFIX=latest" >> $GITHUB_ENV
 
-
       - name: Login to Docker Hub
         id: docker_login
         uses: docker/login-action@v2
@@ -53,5 +64,9 @@ jobs:
 
       - name: Build and push function
         run: |
-          docker build ${{ matrix.function }}_function -t turingrc/rctab-${{ matrix.function }}:${{ env.CURRENT_RELEASE }} -t turingrc/rctab-${{ matrix.function }}:${{ env.MAJOR_VERSION_NUMBER }}.${{ env.TAG_SUFFIX }}
+          poetry install
+          poetry export -f requirements.txt --output requirements.txt --only main --without-hashes
+          docker build . -t turingrc/rctab-${{ matrix.function }}:${{ env.CURRENT_RELEASE }} -t turingrc/rctab-${{ matrix.function }}:${{ env.MAJOR_VERSION_NUMBER }}.${{ env.TAG_SUFFIX }}
           docker push --all-tags turingrc/rctab-${{ matrix.function }}
+
+        working-directory: ${{ matrix.function }}_function

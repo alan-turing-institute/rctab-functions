@@ -1,6 +1,6 @@
 """Authentication between status package and API web app."""
 
-from datetime import datetime, timedelta, UTC
+from datetime import UTC, datetime, timedelta
 
 import jwt
 import requests

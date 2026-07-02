@@ -21,6 +21,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Bootstrap poetry
+        shell: bash
+        run: |
+          python -m ensurepip
+          python -m pip install --upgrade pip
+          python -m pip install poetry
+
       - name: Build function
         run: |
-          docker build ${{ matrix.function }}_function
+          poetry install
+          poetry export -f requirements.txt --output requirements.txt --only main --without-hashes
+          docker build .
+        working-directory: ${{ matrix.function }}_function

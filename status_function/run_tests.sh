@@ -11,15 +11,17 @@ source .venv/bin/activate
 
 # Run here rather than as a pre-commit hook so that local imports happen last
 echo "Running isort..."
-isort . --profile=black
+isort . --profile=black --skip .poetry --skip .venv
 status=$((status+$?))
 
 # Find all .py files (ignoring .venv) and check their code style with pylint,
 # using (something close to) Google's default config
 echo "Running pylint..."
 # shellcheck disable=SC2038
-find . -type f -name "*.py" ! -path "*venv/*" | xargs \
-    pylint --rcfile=tests/pylintrc
+find . -type f -name "*.py" \
+    ! \( -path "./.poetry/*" \) \
+    ! \( -path "./.venv/*" \) |
+    xargs pylint --rcfile=tests/pylintrc
 status=$((status+$?))
 
 # Run our unit tests with code coverage
