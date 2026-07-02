@@ -20,10 +20,10 @@ jobs:
     steps:
 
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
@@ -34,13 +34,8 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install poetry
 
-      - name: Configure poetry
-        shell: bash
-        run: |
-          python -m poetry config virtualenvs.in-project true
-
       - name: Set up cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         id: cache
         with:
           path: status_function/.venv
@@ -49,21 +44,18 @@ jobs:
       - name: Check poetry.lock consistency
         shell: bash
         run: |
-          pwd
-          cd status_function
           poetry check --lock
+        working-directory: status_function
 
       - name: Install dependencies
         shell: bash
         run: |
-          pwd
-          cd status_function
-          python -m poetry install
+          poetry install
+        working-directory: status_function
 
       - name: Run tests
         shell: bash
         run: |
-          pwd
-          cd status_function
-          source .venv/bin/activate
-          ./run_tests.sh
+          poetry run ./run_tests.sh
+        working-directory: status_function
+

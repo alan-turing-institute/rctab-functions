@@ -17,5 +17,5 @@ jobs:
     steps:
 
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - uses: pre-commit/action@v3.0.1
