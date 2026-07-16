@@ -10,7 +10,7 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = "^3.13"
 azure-functions = "^1.23.0"
 azure-identity = "^1.21.0"
 azure-mgmt-authorization = "^4.0.0"

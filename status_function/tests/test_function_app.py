@@ -1,5 +1,6 @@
 """Tests for status package."""
 
+import asyncio
 import logging
 from datetime import datetime
 from importlib import import_module
@@ -12,7 +13,6 @@ from uuid import UUID
 import jwt
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
-from msgraph import GraphServiceClient
 from msgraph.generated.models.service_principal import ServicePrincipal
 from msgraph.generated.models.user import User
 from pydantic import HttpUrl, TypeAdapter
@@ -48,7 +48,9 @@ class TestStatus(TestCase):
     """Tests for the __init__.py file."""
 
     def test_main(self) -> None:
-        with patch("status.get_all_status") as mock_get_all_status:
+        with patch(
+            "status.get_all_status", new_callable=AsyncMock
+        ) as mock_get_all_status:
             mock_get_all_status.return_value = ["status1", "status2"]
 
             with patch("status.datetime") as mock_datetime:
@@ -192,8 +194,10 @@ class TestStatus(TestCase):
                 principal_type="Blah",
             )
             role_assignment.scope = "/"
-            status.get_role_assignment_models(
-                role_assignment, "somerole", MagicMock(spec=GraphServiceClient)
+            asyncio.run(
+                status.get_role_assignment_models(
+                    role_assignment, "somerole", MagicMock(spec=status.GraphLookup)
+                )
             )
         mock_logger.warning.assert_called_with(
             "Did not recognise principal type %s", principal_type
@@ -302,7 +306,7 @@ class TestStatus(TestCase):
                         )
                     ]
 
-                    actual = status.get_all_status()
+                    actual = asyncio.run(status.get_all_status())
                     self.assertListEqual(expected, actual)
 
                     mock_graph_client.assert_called_with(

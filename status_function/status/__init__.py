@@ -7,7 +7,6 @@ Attributes:
 import asyncio
 import logging
 from datetime import datetime
-from functools import lru_cache
 from typing import Any, Final
 
 import azure.functions as func
@@ -161,121 +160,112 @@ def get_principal_details(principal: Any) -> dict[str, Any]:
     }
 
 
-@lru_cache(maxsize=500)
-def get_graph_user(user_id: str, client: GraphServiceClient) -> User | None:
-    """Get a user from the graph client.
+class GraphLookup:
+    """Wrap a GraphServiceClient with per-run memoization of principal lookups.
 
-    Args:
-        user_id: The user UUID id to get.
-        client: The graph client to use.
-
-    Returns:
-        The user object.
+    Attributes:
+        client: The graph client to use for lookups.
     """
-    try:
-        # It seems as though Azure runs us in a thread and the default
-        # policy is for only the main thread to have a ready-made loop.
-        loop = asyncio.get_event_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
 
-    try:
-        return loop.run_until_complete(client.users.by_user_id(user_id).get())
-    except APIError as e:
-        logger.warning(e)
-        return None
+    def __init__(self, client: GraphServiceClient) -> None:
+        """Create a GraphLookup.
 
+        Args:
+            client: The graph client to use for lookups.
+        """
+        self.client = client
+        self._users: dict[str, User | None] = {}
+        self._groups: dict[str, DirectoryObjectCollectionResponse | None] = {}
+        self._service_principals: dict[str, ServicePrincipal | None] = {}
 
-@lru_cache(maxsize=500)
-def get_graph_group_members(
-    group_id: str, client: GraphServiceClient
-) -> DirectoryObjectCollectionResponse | None:
-    """Get the members list for a group.
+    async def get_graph_user(self, user_id: str) -> User | None:
+        """Get a user from the graph client.
 
-    Args:
-        group_id: The UUID of the group.
-        client: The graph client to use.
+        Args:
+            user_id: The user UUID id to get.
 
-    Returns:
-        An object containing the members of the group in its value attribute.
-    """
-    try:
-        # It seems as though Azure runs us in a thread and the default
-        # policy is for only the main thread to have a ready-made loop.
-        loop = asyncio.get_event_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
+        Returns:
+            The user object.
+        """
+        if user_id not in self._users:
+            try:
+                self._users[user_id] = await self.client.users.by_user_id(user_id).get()
+            except APIError as e:
+                logger.warning(e)
+                self._users[user_id] = None
+        return self._users[user_id]
 
-    try:
-        # Note that this is a paginated response,
-        # and will only return the first 100 results.
-        return loop.run_until_complete(
-            client.groups.by_group_id(group_id).members.get()
-        )
-    except APIError as e:
-        logger.warning(e)
-        return None
+    async def get_graph_group_members(
+        self, group_id: str
+    ) -> DirectoryObjectCollectionResponse | None:
+        """Get the members list for a group.
 
+        Args:
+            group_id: The UUID of the group.
 
-@lru_cache(maxsize=500)
-def get_graph_service_principal(
-    service_principal_id: str, client: GraphServiceClient
-) -> ServicePrincipal | None:
-    """Get a user from the graph client.
+        Returns:
+            An object containing the members of the group in its value attribute.
+        """
+        if group_id not in self._groups:
+            try:
+                # Note that this is a paginated response,
+                # and will only return the first 100 results.
+                self._groups[group_id] = await self.client.groups.by_group_id(
+                    group_id
+                ).members.get()
+            except APIError as e:
+                logger.warning(e)
+                self._groups[group_id] = None
+        return self._groups[group_id]
 
-    Args:
-        service_principal_id: The UUID of the service principal.
-        client: The graph client to use.
+    async def get_graph_service_principal(
+        self, service_principal_id: str
+    ) -> ServicePrincipal | None:
+        """Get a service principal from the graph client.
 
-    Returns:
-        The service principal object.
-    """
-    try:
-        # It seems as though Azure runs us in a thread and the default
-        # policy is for only the main thread to have a ready-made loop.
-        loop = asyncio.get_event_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
+        Args:
+            service_principal_id: The UUID of the service principal.
 
-    try:
-        return loop.run_until_complete(
-            client.service_principals.by_service_principal_id(
-                service_principal_id
-            ).get()
-        )
-    except APIError as e:
-        print("logger type:", type(logger), flush=True)
-        logger.warning(e)
-        return None
+        Returns:
+            The service principal object.
+        """
+        if service_principal_id not in self._service_principals:
+            try:
+                self._service_principals[service_principal_id] = (
+                    await self.client.service_principals.by_service_principal_id(
+                        service_principal_id
+                    ).get()
+                )
+            except APIError as e:
+                logger.warning(e)
+                self._service_principals[service_principal_id] = None
+        return self._service_principals[service_principal_id]
 
 
-def get_role_assignment_models(
-    assignment: Any, role_name: str, graph_client: GraphServiceClient
+async def get_role_assignment_models(
+    assignment: Any, role_name: str, lookup: GraphLookup
 ) -> list[models.RoleAssignment]:
     """Populate RoleAssignment objects with principal role details.
 
     Args:
         assignment: The role assignment to get details for.
         role_name: The name of the role.
-        graph_client: The graph client to check the principal.
+        lookup: The graph lookup to check the principal.
 
     Returns:
         A list of RoleAssignment objects.
     """
     user_details = []
     if assignment.principal_type == "User":
-        user = get_graph_user(assignment.principal_id, graph_client)
+        user = await lookup.get_graph_user(assignment.principal_id)
         user_details.append(get_principal_details(user))
     elif assignment.principal_type == "Group":
-        group_members = get_graph_group_members(assignment.principal_id, graph_client)
+        group_members = await lookup.get_graph_group_members(assignment.principal_id)
         if group_members is not None and group_members.value is not None:
             user_details.extend([get_principal_details(x) for x in group_members.value])
     elif assignment.principal_type == "ServicePrincipal":
-        service_principal = get_graph_service_principal(
-            assignment.principal_id, graph_client
+        service_principal = await lookup.get_graph_service_principal(
+            assignment.principal_id
         )
         user_details.append(get_principal_details(service_principal))
     else:
@@ -296,15 +286,15 @@ def get_role_assignment_models(
     ]
 
 
-def get_subscription_role_assignment_models(
+async def get_subscription_role_assignment_models(
     subscription: Any,
-    graph_client: GraphServiceClient,
+    lookup: GraphLookup,
 ) -> list[models.RoleAssignment]:
     """Get the role assignment models for each a subscription.
 
     Args:
         subscription: The subscription to get role assignments for.
-        graph_client: The graph client to check the principal.
+        lookup: The graph lookup to check the principal.
 
     Returns:
         A list of RoleAssignment objects.
@@ -314,15 +304,15 @@ def get_subscription_role_assignment_models(
     assignments_list = get_role_assignments_list(auth_client)
     role_assignments_models = []
     for assignment in assignments_list:
-        role_assignments_models += get_role_assignment_models(
+        role_assignments_models += await get_role_assignment_models(
             assignment,
             role_def_dict.get(assignment.role_definition_id, "Unknown"),
-            graph_client,
+            lookup,
         )
     return role_assignments_models
 
 
-def get_all_status() -> list[models.SubscriptionStatus]:
+async def get_all_status() -> list[models.SubscriptionStatus]:
     """Get status and role assignments for all subscriptions.
 
     Returns:
@@ -333,6 +323,7 @@ def get_all_status() -> list[models.SubscriptionStatus]:
 
     scopes = ["https://graph.microsoft.com/.default"]
     graph_client = GraphServiceClient(credentials=CREDENTIALS, scopes=scopes)
+    lookup = GraphLookup(graph_client)
 
     client = SubscriptionClient(credential=CREDENTIALS)
     subscriptions = client.subscriptions.list()
@@ -347,8 +338,8 @@ def get_all_status() -> list[models.SubscriptionStatus]:
             and subscription.display_name is not None
             and subscription.state is not None
         ):
-            role_assignments_models = get_subscription_role_assignment_models(
-                subscription, graph_client
+            role_assignments_models = await get_subscription_role_assignment_models(
+                subscription, lookup
             )
 
             data.append(
@@ -388,7 +379,7 @@ def main(mytimer: func.TimerRequest) -> None:
     if mytimer.past_due:
         logger.info("The timer is past due.")
 
-    status = get_all_status()
+    status = asyncio.run(get_all_status())
 
     send_status(config.API_URL, status)
     logger.warning(
