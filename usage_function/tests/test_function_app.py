@@ -411,6 +411,41 @@ class TestCostManagement(TestCase):
                         timeout=60,
                     )
 
+    def test_send_usage_sets_json_content_type_header(self) -> None:
+        """costmanagement.send_usage should tell the server it is sending JSON."""
+        end_datetime = date.today()
+        start_datetime = end_datetime - timedelta(days=364)
+        local_usage = costmanagement.models.AllCMUsage(
+            cm_usage_list=[
+                costmanagement.models.CMUsage(
+                    subscription_id=UUID(int=1),
+                    name="sub1",
+                    start_datetime=start_datetime,
+                    end_datetime=end_datetime,
+                    cost=12.0,
+                    billing_currency="GBP",
+                ),
+            ]
+        )
+
+        with patch("costmanagement.BearerAuth"):
+            with patch("requests.post") as mock_post:
+                mock_response = MagicMock()
+                mock_response.status_code = 200
+                mock_post.return_value = mock_response
+
+                with patch("costmanagement.logger.warning"):
+                    costmanagement.send_usage(
+                        "https://123.234.345.456",
+                        local_usage,
+                    )
+
+                    _, kwargs = mock_post.call_args
+                    self.assertEqual(
+                        kwargs.get("headers"),
+                        {"Content-Type": "application/json"},
+                    )
+
 
 if __name__ == "__main__":
     main()

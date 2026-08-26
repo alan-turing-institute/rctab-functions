@@ -231,6 +231,29 @@ class TestUsageUtils(TestCase):
                         timeout=60,
                     )
 
+    def test_send_usage_sets_json_content_type_header(self) -> None:
+        """send_usage should tell the server it is sending JSON."""
+        with patch("utils.usage.BearerAuth"):
+            with patch("requests.post") as mock_post:
+                mock_response = MagicMock()
+                mock_response.status_code = 200
+                mock_post.return_value = mock_response
+
+                sept_2021 = date(2021, 9, 1)
+
+                utils.usage.send_usage(
+                    HTTP_ADAPTER.validate_python("https://123.123.123.123"),
+                    [],
+                    sept_2021,
+                    sept_2021,
+                )
+
+                _, kwargs = mock_post.call_args
+                self.assertEqual(
+                    kwargs.get("headers"),
+                    {"Content-Type": "application/json"},
+                )
+
     def test_row_to_model_1(self) -> None:
         """Check the retrieve usage function sets amortised cost."""
         # pylint: disable=invalid-name
