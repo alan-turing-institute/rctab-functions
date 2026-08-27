@@ -2,6 +2,7 @@
 *
 
 # ...except for the bare necessities
+!host.json
 !requirements.txt
 !controller/*.py
 !controller/function.json
