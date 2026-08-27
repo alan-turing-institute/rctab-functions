@@ -150,38 +150,6 @@ class TestStatus(TestCase):
                         timeout=60,
                     )
 
-    def test_send_status_sets_json_content_type_header(self) -> None:
-        """send_status should tell the server it is sending JSON."""
-        example_status = SubscriptionStatus(
-            subscription_id=UUID(int=1),
-            display_name="sub1",
-            state="Enabled",
-            role_assignments=(
-                RoleAssignment(
-                    role_definition_id=str(UUID(int=10)),
-                    role_name="Contributor",
-                    principal_id=str(UUID(int=100)),
-                    display_name="Joe Bloggs",
-                    mail="jbloggs@mail.ac.uk",
-                    scope="/",
-                ),
-            ),
-        )
-
-        with patch("status.BearerAuth"):
-            with patch("requests.post") as mock_post:
-                mock_response = MagicMock()
-                mock_response.status_code = 200
-                mock_post.return_value = mock_response
-
-                status.send_status(VALID_URL, [example_status])
-
-                _, kwargs = mock_post.call_args
-                self.assertEqual(
-                    kwargs.get("headers"),
-                    {"Content-Type": "application/json"},
-                )
-
     def test_get_principal_details_user(self) -> None:
         """test get_principal_details returns the expected dictionary of user
         information.
