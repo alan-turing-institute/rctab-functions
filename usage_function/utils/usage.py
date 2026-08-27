@@ -305,6 +305,7 @@ def send_usage(
         resp = requests.post(
             str(hostname_or_ip) + path,
             data=data,
+            headers={"Content-Type": "application/json"},
             auth=BearerAuth(),
             timeout=60,
         )

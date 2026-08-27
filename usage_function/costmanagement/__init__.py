@@ -166,6 +166,7 @@ def send_usage(hostname_or_ip, all_usage):
         resp = requests.post(
             hostname_or_ip + "/accounting/all-cm-usage",
             data=all_usage.model_dump_json().encode("utf-8"),
+            headers={"Content-Type": "application/json"},
             auth=BearerAuth(),
             timeout=60,
         )

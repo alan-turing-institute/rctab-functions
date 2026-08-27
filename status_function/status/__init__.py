@@ -67,6 +67,7 @@ def send_status(hostname_or_ip: HttpUrl, status_data: list) -> None:
         resp = requests.post(
             str(hostname_or_ip) + "accounting/all-status",
             data=data,
+            headers={"Content-Type": "application/json"},
             auth=BearerAuth(),
             timeout=60,
         )

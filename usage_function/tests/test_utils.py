@@ -198,6 +198,7 @@ class TestUsageUtils(TestCase):
                     expected_call = call(
                         "https://123.123.123.123/accounting/all-usage",
                         data=expected_data,
+                        headers={"Content-Type": "application/json"},
                         auth=mock_auth.return_value,
                         timeout=60,
                     )
@@ -227,6 +228,7 @@ class TestUsageUtils(TestCase):
                     mock_post.assert_called_once_with(
                         "https://123.123.123.123/accounting/all-usage",
                         data=expected_data,
+                        headers={"Content-Type": "application/json"},
                         auth=mock_auth.return_value,
                         timeout=60,
                     )

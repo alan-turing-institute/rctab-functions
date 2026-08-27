@@ -120,6 +120,7 @@ class TestStatus(TestCase):
                     expected_call = call(
                         "https://my.org/accounting/all-status",
                         data=expected_data,
+                        headers={"Content-Type": "application/json"},
                         auth=mock_auth.return_value,
                         timeout=60,
                     )
@@ -144,6 +145,7 @@ class TestStatus(TestCase):
                     mock_post.assert_called_once_with(
                         "https://my.org/accounting/all-status",
                         data=expected_data,
+                        headers={"Content-Type": "application/json"},
                         auth=mock_auth.return_value,
                         timeout=60,
                     )
