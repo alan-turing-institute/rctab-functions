@@ -53,9 +53,15 @@ def add_log_handler_once(name: str = "status") -> None:
     logger = logging.getLogger(name)
     log_settings = settings.get_settings()
     if log_settings.CENTRAL_LOGGING_CONNECTION_STRING:
-        for handler in logger.handlers:
+        for handler in list(logger.handlers):
             # Only allow one AzureLogHandler per logger
             if isinstance(handler, AzureLogHandler):
+                if handler.lock is None:
+                    # The handler was closed (e.g. by logging.shutdown() during
+                    # worker process teardown) but never removed from the
+                    # logger. Replace it rather than reusing a dead handler.
+                    logger.removeHandler(handler)
+                    break
                 return
 
         custom_dimensions = {"logger_name": f"logger_{name}"}
