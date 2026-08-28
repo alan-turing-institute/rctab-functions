@@ -1,6 +1,7 @@
 """Utils to send logs to Azure Application Insights."""
 
 import logging
+import threading
 from typing import Optional
 
 from opencensus.ext.azure.log_exporter import AzureLogHandler
@@ -54,5 +55,13 @@ def add_log_handler_once(name: str = "usage_function") -> None:
         handler = AzureLogHandler(
             connection_string=settings.CENTRAL_LOGGING_CONNECTION_STRING
         )
+        if handler.lock is None:
+            # AzureLogHandler.createLock() always sets self.lock = None, since
+            # it manages its own thread safety via an internal queue/worker
+            # thread rather than the stdlib lock. Python's logging.Handler
+            # .handle() used to null-check before using the lock, but from
+            # Python 3.13 it does `with self.lock:` unconditionally, so a
+            # None lock crashes every log call. Give it a real lock instead.
+            handler.lock = threading.RLock()
         handler.addFilter(CustomDimensionsFilter(custom_dimensions))
         logger.addHandler(handler)
