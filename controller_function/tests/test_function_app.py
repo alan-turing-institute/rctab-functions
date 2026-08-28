@@ -197,6 +197,26 @@ class TestAuth(TestCase):
             self.assertEqual("controller-app", username)
 
 
+class _NoLockHandler(logging.Handler):
+    """Mimics AzureLogHandler's createLock(), which always sets lock=None.
+
+    AzureLogHandler manages its own thread safety via an internal queue and
+    worker thread, so it deliberately never creates a stdlib lock. Python's
+    logging.Handler.handle() used to null-check the lock before use, but
+    from Python 3.13 it does `with self.lock:` unconditionally, so a None
+    lock crashes every log call.
+    """
+
+    def __init__(self, **kwargs) -> None:
+        super().__init__()
+
+    def createLock(self) -> None:
+        self.lock = None
+
+    def emit(self, record: logging.LogRecord) -> None:
+        pass
+
+
 class TestLoggingUtils(TestCase):
     def test_called_twice(self) -> None:
         """Adding multiple loggers could cause large storage bills."""
@@ -227,6 +247,21 @@ class TestLoggingUtils(TestCase):
         self.assertEqual(1, len(handlers))
         self.assertIsNot(dead_handler, handlers[0])
         self.assertIsNotNone(handlers[0].lock)
+
+    def test_gives_lockless_handler_a_real_lock(self) -> None:
+        """A handler with lock=None (as AzureLogHandler's) must be fixed up."""
+        with patch("controller.settings.get_settings") as mock_get_settings:
+            mock_get_settings.return_value.CENTRAL_LOGGING_CONNECTION_STRING = "my-str"
+
+            with patch("controller.logutils.AzureLogHandler", new=_NoLockHandler):
+                controller.logutils.add_log_handler_once("c")
+
+        logger = logging.getLogger("c")
+        handlers = logger.handlers
+        self.assertEqual(1, len(handlers))
+        self.assertIsNotNone(handlers[0].lock)
+        # Raises TypeError on Python 3.13+ if the handler's lock is None.
+        logger.warning("test message")
 
 
 if __name__ == "__main__":
