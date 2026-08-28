@@ -415,6 +415,25 @@ class TestLoggingUtils(TestCase):
         handlers = logging.getLogger("a").handlers
         self.assertEqual(1, len(handlers))
 
+    def test_replaces_dead_handler(self) -> None:
+        """A closed handler (lock=None) should be replaced, not reused."""
+        with patch("status.settings.get_settings") as mock_get_settings:
+            mock_get_settings.return_value.CENTRAL_LOGGING_CONNECTION_STRING = "my-str"
+
+            with patch("status.logutils.AzureLogHandler", new=MagicMock):
+                status.logutils.add_log_handler_once("b")
+                handlers = logging.getLogger("b").handlers
+                self.assertEqual(1, len(handlers))
+                dead_handler = handlers[0]
+                dead_handler.lock = None
+
+                status.logutils.add_log_handler_once("b")
+
+        handlers = logging.getLogger("b").handlers
+        self.assertEqual(1, len(handlers))
+        self.assertIsNot(dead_handler, handlers[0])
+        self.assertIsNotNone(handlers[0].lock)
+
 
 if __name__ == "__main__":
     main()
