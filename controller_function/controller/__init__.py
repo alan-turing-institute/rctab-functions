@@ -13,7 +13,6 @@ from requests import get
 
 from controller import settings
 from controller.auth import BearerAuth
-from controller.logutils import add_log_handler_once
 from controller.subscription import disable_subscription, enable_subscription
 
 logger = logging.getLogger(__name__)
@@ -91,8 +90,6 @@ def main(mytimer: func.TimerRequest) -> None:
         format="%(asctime)s %(message)s",
         datefmt="%d/%m/%Y %I:%M:%S %p",
     )
-    add_log_handler_once(__name__)
-
     logger.warning("Controller function starting.")
 
     if mytimer.past_due:

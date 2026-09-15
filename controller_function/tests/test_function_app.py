@@ -1,7 +1,6 @@
 """Tests for controller package."""
 
 import json
-import logging
 from typing import Final
 from unittest import TestCase, main
 from unittest.mock import MagicMock, call, patch
@@ -195,74 +194,6 @@ class TestAuth(TestCase):
             )
             username = payload.get("sub")
             self.assertEqual("controller-app", username)
-
-
-class TestLoggingUtils(TestCase):
-    """Tests for the logutils.py file."""
-
-    def setUp(self) -> None:
-        """Forget that Azure Monitor was configured by an earlier test."""
-        controller.logutils.configure_telemetry.cache_clear()
-
-    def test_called_twice(self) -> None:
-        """configure_azure_monitor() sets up process-wide state.
-
-        Calling it more than once would duplicate the exporting machinery.
-        """
-        with patch("controller.settings.get_settings") as mock_get_settings:
-            mock_get_settings.return_value.APPLICATIONINSIGHTS_CONNECTION_STRING = (
-                "my-str"
-            )
-
-            with patch("controller.logutils.configure_azure_monitor") as mock_configure:
-                controller.logutils.add_log_handler_once("a")
-                controller.logutils.add_log_handler_once("a")
-
-        mock_configure.assert_called_once()
-
-    def test_no_connection_string(self) -> None:
-        """Without a connection string we should not configure anything."""
-        with patch("controller.settings.get_settings") as mock_get_settings:
-            mock_get_settings.return_value.APPLICATIONINSIGHTS_CONNECTION_STRING = None
-
-            with patch("controller.logutils.configure_azure_monitor") as mock_configure:
-                controller.logutils.add_log_handler_once("c")
-
-        mock_configure.assert_not_called()
-
-    def test_live_metrics_disabled(self) -> None:
-        """Continuous streams do not suit a timer-triggered function."""
-        with patch("controller.settings.get_settings") as mock_get_settings:
-            mock_get_settings.return_value.APPLICATIONINSIGHTS_CONNECTION_STRING = (
-                "my-str"
-            )
-
-            with patch("controller.logutils.configure_azure_monitor") as mock_configure:
-                controller.logutils.add_log_handler_once("d")
-
-        kwargs = mock_configure.call_args.kwargs
-        self.assertFalse(kwargs["enable_live_metrics"])
-        self.assertFalse(kwargs["enable_performance_counters"])
-        self.assertEqual("d", kwargs["logger_name"])
-
-    def test_code_attributes_added(self) -> None:
-        """Source location should survive as custom dimensions."""
-        record = logging.LogRecord(
-            name="e",
-            level=logging.WARNING,
-            pathname="/somewhere/mymodule.py",
-            lineno=42,
-            msg="a message",
-            args=(),
-            exc_info=None,
-        )
-        record.funcName = "my_function"
-
-        self.assertTrue(controller.logutils.CodeAttributesFilter().filter(record))
-        attributes = vars(record)
-        self.assertEqual("/somewhere/mymodule.py", attributes["code.file.path"])
-        self.assertEqual("my_function", attributes["code.function.name"])
-        self.assertEqual(42, attributes["code.line.number"])
 
 
 if __name__ == "__main__":
