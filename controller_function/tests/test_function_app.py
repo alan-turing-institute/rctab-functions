@@ -201,73 +201,68 @@ class TestLoggingUtils(TestCase):
     """Tests for the logutils.py file."""
 
     def setUp(self) -> None:
-        """Clear the cached logger provider between tests."""
-        controller.logutils.get_logger_provider.cache_clear()
+        """Forget that Azure Monitor was configured by an earlier test."""
+        controller.logutils.configure_telemetry.cache_clear()
 
     def test_called_twice(self) -> None:
-        """Adding multiple handlers could cause large storage bills."""
+        """configure_azure_monitor() sets up process-wide state.
+
+        Calling it more than once would duplicate the exporting machinery.
+        """
         with patch("controller.settings.get_settings") as mock_get_settings:
             mock_get_settings.return_value.APPLICATIONINSIGHTS_CONNECTION_STRING = (
                 "my-str"
             )
 
-            with patch("controller.logutils.AzureMonitorLogExporter", new=MagicMock):
+            with patch("controller.logutils.configure_azure_monitor") as mock_configure:
                 controller.logutils.add_log_handler_once("a")
                 controller.logutils.add_log_handler_once("a")
 
-        handlers = logging.getLogger("a").handlers
-        self.assertEqual(1, len(handlers))
+        mock_configure.assert_called_once()
 
     def test_no_connection_string(self) -> None:
-        """Without a connection string we should not add a handler."""
+        """Without a connection string we should not configure anything."""
         with patch("controller.settings.get_settings") as mock_get_settings:
             mock_get_settings.return_value.APPLICATIONINSIGHTS_CONNECTION_STRING = None
 
-            with patch("controller.logutils.AzureMonitorLogExporter", new=MagicMock):
+            with patch("controller.logutils.configure_azure_monitor") as mock_configure:
                 controller.logutils.add_log_handler_once("c")
 
-        self.assertEqual(0, len(logging.getLogger("c").handlers))
+        mock_configure.assert_not_called()
 
-    def test_custom_dimensions_are_flat_attributes(self) -> None:
-        """Custom dimensions should be set individually on the record.
+    def test_live_metrics_disabled(self) -> None:
+        """Continuous streams do not suit a timer-triggered function."""
+        with patch("controller.settings.get_settings") as mock_get_settings:
+            mock_get_settings.return_value.APPLICATIONINSIGHTS_CONNECTION_STRING = (
+                "my-str"
+            )
 
-        OpenTelemetry attribute values must be primitives or homogeneous
-        sequences, so a nested dict would be dropped by the exporter.
-        """
-        record = logging.LogRecord(
-            name="d",
-            level=logging.WARNING,
-            pathname=__file__,
-            lineno=1,
-            msg="a message",
-            args=(),
-            exc_info=None,
-        )
-        log_filter = controller.logutils.CustomDimensionsFilter(
-            {"logger_name": "logger_d"}
-        )
+            with patch("controller.logutils.configure_azure_monitor") as mock_configure:
+                controller.logutils.add_log_handler_once("d")
 
-        self.assertTrue(log_filter.filter(record))
-        self.assertEqual("logger_d", getattr(record, "logger_name"))
+        kwargs = mock_configure.call_args.kwargs
+        self.assertFalse(kwargs["enable_live_metrics"])
+        self.assertFalse(kwargs["enable_performance_counters"])
+        self.assertEqual("d", kwargs["logger_name"])
 
-    def test_existing_attribute_wins(self) -> None:
-        """A value set on the record should not be overwritten by the default."""
+    def test_code_attributes_added(self) -> None:
+        """Source location should survive as custom dimensions."""
         record = logging.LogRecord(
             name="e",
             level=logging.WARNING,
-            pathname=__file__,
-            lineno=1,
+            pathname="/somewhere/mymodule.py",
+            lineno=42,
             msg="a message",
             args=(),
             exc_info=None,
         )
-        record.logger_name = "set_by_caller"  # type: ignore[attr-defined]
-        log_filter = controller.logutils.CustomDimensionsFilter(
-            {"logger_name": "logger_e"}
-        )
+        record.funcName = "my_function"
 
-        log_filter.filter(record)
-        self.assertEqual("set_by_caller", getattr(record, "logger_name"))
+        self.assertTrue(controller.logutils.CodeAttributesFilter().filter(record))
+        attributes = vars(record)
+        self.assertEqual("/somewhere/mymodule.py", attributes["code.file.path"])
+        self.assertEqual("my_function", attributes["code.function.name"])
+        self.assertEqual(42, attributes["code.line.number"])
 
 
 if __name__ == "__main__":
