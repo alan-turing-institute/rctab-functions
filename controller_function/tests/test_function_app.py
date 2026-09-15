@@ -198,35 +198,76 @@ class TestAuth(TestCase):
 
 
 class TestLoggingUtils(TestCase):
-    def test_called_twice(self) -> None:
-        """Adding multiple loggers could cause large storage bills."""
-        with patch("controller.settings.get_settings") as mock_get_settings:
-            mock_get_settings.return_value.CENTRAL_LOGGING_CONNECTION_STRING = "my-str"
+    """Tests for the logutils.py file."""
 
-            with patch("controller.logutils.AzureLogHandler", new=MagicMock):
+    def setUp(self) -> None:
+        """Clear the cached logger provider between tests."""
+        controller.logutils.get_logger_provider.cache_clear()
+
+    def test_called_twice(self) -> None:
+        """Adding multiple handlers could cause large storage bills."""
+        with patch("controller.settings.get_settings") as mock_get_settings:
+            mock_get_settings.return_value.APPLICATIONINSIGHTS_CONNECTION_STRING = (
+                "my-str"
+            )
+
+            with patch("controller.logutils.AzureMonitorLogExporter", new=MagicMock):
                 controller.logutils.add_log_handler_once("a")
                 controller.logutils.add_log_handler_once("a")
+
         handlers = logging.getLogger("a").handlers
         self.assertEqual(1, len(handlers))
 
-    def test_replaces_dead_handler(self) -> None:
-        """A closed handler (lock=None) should be replaced, not reused."""
+    def test_no_connection_string(self) -> None:
+        """Without a connection string we should not add a handler."""
         with patch("controller.settings.get_settings") as mock_get_settings:
-            mock_get_settings.return_value.CENTRAL_LOGGING_CONNECTION_STRING = "my-str"
+            mock_get_settings.return_value.APPLICATIONINSIGHTS_CONNECTION_STRING = None
 
-            with patch("controller.logutils.AzureLogHandler", new=MagicMock):
-                controller.logutils.add_log_handler_once("b")
-                handlers = logging.getLogger("b").handlers
-                self.assertEqual(1, len(handlers))
-                dead_handler = handlers[0]
-                dead_handler.lock = None
+            with patch("controller.logutils.AzureMonitorLogExporter", new=MagicMock):
+                controller.logutils.add_log_handler_once("c")
 
-                controller.logutils.add_log_handler_once("b")
+        self.assertEqual(0, len(logging.getLogger("c").handlers))
 
-        handlers = logging.getLogger("b").handlers
-        self.assertEqual(1, len(handlers))
-        self.assertIsNot(dead_handler, handlers[0])
-        self.assertIsNotNone(handlers[0].lock)
+    def test_custom_dimensions_are_flat_attributes(self) -> None:
+        """Custom dimensions should be set individually on the record.
+
+        OpenTelemetry attribute values must be primitives or homogeneous
+        sequences, so a nested dict would be dropped by the exporter.
+        """
+        record = logging.LogRecord(
+            name="d",
+            level=logging.WARNING,
+            pathname=__file__,
+            lineno=1,
+            msg="a message",
+            args=(),
+            exc_info=None,
+        )
+        log_filter = controller.logutils.CustomDimensionsFilter(
+            {"logger_name": "logger_d"}
+        )
+
+        self.assertTrue(log_filter.filter(record))
+        self.assertEqual("logger_d", getattr(record, "logger_name"))
+
+    def test_existing_attribute_wins(self) -> None:
+        """A value set on the record should not be overwritten by the default."""
+        record = logging.LogRecord(
+            name="e",
+            level=logging.WARNING,
+            pathname=__file__,
+            lineno=1,
+            msg="a message",
+            args=(),
+            exc_info=None,
+        )
+        record.logger_name = "set_by_caller"  # type: ignore[attr-defined]
+        log_filter = controller.logutils.CustomDimensionsFilter(
+            {"logger_name": "logger_e"}
+        )
+
+        log_filter.filter(record)
+        self.assertEqual("set_by_caller", getattr(record, "logger_name"))
 
 
 if __name__ == "__main__":
