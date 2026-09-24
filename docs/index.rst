@@ -22,6 +22,8 @@ See the pages for the individual functions for more details.
 
    Home <self>
    content/setup
+   content/developing
+   content/releasing
    content/controller
    content/status
    content/usage
