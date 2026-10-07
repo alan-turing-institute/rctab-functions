@@ -19,7 +19,6 @@ azure-identity = "^1.16.0"
 azure-mgmt-costmanagement = "^4.0.1"
 azure-mgmt-managementgroups = "^1.0.0"
 azure-mgmt-subscription = "^3.1.1"
-opencensus-ext-azure = "^1.1.13"
 pydantic = "^2.11.5"
 pydantic-settings = "^2.9.1"
 PyJWT = {extras = ["crypto"], version = "^2.8.0"}

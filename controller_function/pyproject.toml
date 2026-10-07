@@ -15,7 +15,6 @@ azure-functions = "^1.19.0"
 azure-identity = "^1.16.0"
 azure-mgmt-resource = "^23.1.1"
 azure-mgmt-subscription = "^3.1.1"
-opencensus-ext-azure = "^1.1.13"
 pydantic = "^2.11.5"
 pydantic-settings = "^2.9.1"
 PyJWT = {extras = ["crypto"], version = "^2.8.0"}
