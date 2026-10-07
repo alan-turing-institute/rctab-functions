@@ -1,7 +1,6 @@
 """Tests for function app utils."""
 
 import csv
-import logging
 from datetime import date, datetime, timedelta
 from io import TextIOWrapper
 from typing import BinaryIO, Final
@@ -19,7 +18,6 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from pydantic import HttpUrl, TypeAdapter
 from rctab_models import models
 
-import utils.logutils
 import utils.settings
 import utils.usage
 from utils.usage import usage_row_to_usage_model
