@@ -538,7 +538,6 @@ class TestSettings(TestCase):
             CM_MGMT_GROUP="somegroup",
             BILLING_ACCOUNT_ID="someid",
             BILLING_PROFILE_ID="someotherid",
-            CENTRAL_LOGGING_CONNECTION_STRING="someconnectionstring",
             _env_file=None,
         )
 
@@ -574,38 +573,6 @@ class TestSettings(TestCase):
                 PRIVATE_KEY="-----END OPENSSH PRIVATE KEY-----",
                 _env_file=None,
             )
-
-
-class TestLoggingUtils(TestCase):
-    def test_called_twice(self) -> None:
-        """Adding multiple loggers could cause large storage bills."""
-        with patch("utils.settings.get_settings") as mock_get_settings:
-            mock_get_settings.return_value.CENTRAL_LOGGING_CONNECTION_STRING = "my-str"
-
-            with patch("utils.logutils.AzureLogHandler", new=MagicMock):
-                utils.logutils.add_log_handler_once("a")
-                utils.logutils.add_log_handler_once("a")
-        handlers = logging.getLogger("a").handlers
-        self.assertEqual(1, len(handlers))
-
-    def test_replaces_dead_handler(self) -> None:
-        """A closed handler (lock=None) should be replaced, not reused."""
-        with patch("utils.settings.get_settings") as mock_get_settings:
-            mock_get_settings.return_value.CENTRAL_LOGGING_CONNECTION_STRING = "my-str"
-
-            with patch("utils.logutils.AzureLogHandler", new=MagicMock):
-                utils.logutils.add_log_handler_once("b")
-                handlers = logging.getLogger("b").handlers
-                self.assertEqual(1, len(handlers))
-                dead_handler = handlers[0]
-                dead_handler.lock = None
-
-                utils.logutils.add_log_handler_once("b")
-
-        handlers = logging.getLogger("b").handlers
-        self.assertEqual(1, len(handlers))
-        self.assertIsNot(dead_handler, handlers[0])
-        self.assertIsNotNone(handlers[0].lock)
 
 
 if __name__ == "__main__":
