@@ -1,7 +1,6 @@
 """Tests for status package."""
 
 import asyncio
-import logging
 from datetime import datetime
 from importlib import import_module
 from types import SimpleNamespace
