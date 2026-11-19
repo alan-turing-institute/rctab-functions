@@ -1,0 +1,74 @@
+---
+
+name: Checks and tests
+
+# Runs for every function on every PR (no path filters) so that the
+# required "test (<function>)" checks always report and Renovate PRs
+# that touch several functions can be automerged.
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+
+  test:
+
+    strategy:
+      fail-fast: false
+      matrix:
+        function: [controller, status, usage]
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+
+      - name: Checkout Code
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        id: setup-python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Bootstrap poetry
+        shell: bash
+        run: |
+          python -m ensurepip
+          python -m pip install --upgrade pip
+          python -m pip install poetry
+
+      # run_tests.sh activates .venv, and the cache below saves it
+      - name: Configure poetry
+        shell: bash
+        run: |
+          python -m poetry config virtualenvs.in-project true
+
+      - name: Set up cache
+        uses: actions/cache@v6
+        id: cache
+        with:
+          path: ${{ matrix.function }}_function/.venv
+          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles(format('{0}_function/poetry.lock', matrix.function)) }}
+
+      - name: Check poetry.lock consistency
+        shell: bash
+        run: |
+          poetry check --lock
+        working-directory: ${{ matrix.function }}_function
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          poetry install
+        working-directory: ${{ matrix.function }}_function
+
+      - name: Run tests
+        shell: bash
+        run: |
+          poetry run ./run_tests.sh
+        working-directory: ${{ matrix.function }}_function

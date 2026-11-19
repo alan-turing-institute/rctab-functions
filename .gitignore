@@ -3,6 +3,8 @@
 *.csv
 *.pkl
 *.json
+requirements.txt
+!renovate.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
