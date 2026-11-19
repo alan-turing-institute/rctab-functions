@@ -57,12 +57,13 @@
       "versioning": "regex:^4-python(?<major>\\d+)\\.(?<minor>\\d+)-appservice$"
     },
     {
-      "description": "Python version bumps (CI and base images) join the preset's python group: one PR, approved from the Dependency Dashboard, never automerged",
+      "description": "Python version bumps (CI and base images) join the preset's python group: one PR, approved from the Dependency Dashboard, never automerged. The image tags have no release timestamp, so minimumReleaseAge would leave them pending forever",
       "matchDepNames": [
         "azure-functions-python",
         "mcr.microsoft.com/azure-functions/python"
       ],
       "groupName": "python",
+      "minimumReleaseAge": null,
       "automerge": false,
       "dependencyDashboardApproval": true
     }
