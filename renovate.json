@@ -37,6 +37,21 @@
       "datasourceTemplate": "docker",
       "extractVersionTemplate": "^4-python(?<version>\\d+\\.\\d+)-appservice$",
       "versioningTemplate": "pep440"
+    },
+    {
+      "description": "Build the docs on the same Python as the functions (Read the Docs config)",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.readthedocs\\.ya?ml$/"
+      ],
+      "matchStrings": [
+        "python:\\s*\"(?<currentValue>\\d+\\.\\d+)\""
+      ],
+      "depNameTemplate": "azure-functions-python",
+      "packageNameTemplate": "mcr.microsoft.com/azure-functions/python",
+      "datasourceTemplate": "docker",
+      "extractVersionTemplate": "^4-python(?<version>\\d+\\.\\d+)-appservice$",
+      "versioningTemplate": "pep440"
     }
   ],
   "packageRules": [
