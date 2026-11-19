@@ -28,7 +28,6 @@ coverage = "^7.8.0"
 isort = "^6.0.1"
 mypy = "^1.15.0"
 pylint = "^3.3.6"
-pylint-absolute-imports = "^1.1.0"
 types-requests = "^2.32.0.20250328"
 
 [tool.poetry.requires-plugins]
