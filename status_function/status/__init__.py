@@ -26,7 +26,6 @@ from rctab_models import models
 
 from status import settings
 from status.auth import BearerAuth
-from status.logutils import add_log_handler_once
 
 logging.basicConfig(
     level=logging.WARNING,
@@ -374,7 +373,6 @@ def main(mytimer: func.TimerRequest) -> None:
         format="%(asctime)s %(message)s",
         datefmt="%d/%m/%Y %I:%M:%S %p",
     )
-    add_log_handler_once(__name__)
     logger.warning("Status function starting.")
 
     if mytimer.past_due:

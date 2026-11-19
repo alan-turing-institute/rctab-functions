@@ -1,7 +1,6 @@
 """Configuration for the app."""
 
 from functools import lru_cache
-from typing import Optional
 
 from pydantic import HttpUrl, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -13,7 +12,6 @@ class Settings(BaseSettings):
     API_URL: HttpUrl
     PRIVATE_KEY: str
     LOG_LEVEL: str = "WARNING"
-    CENTRAL_LOGGING_CONNECTION_STRING: Optional[str] = None
 
     # Settings for the settings class itself.
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")

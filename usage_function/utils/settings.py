@@ -20,7 +20,6 @@ class Settings(BaseSettings):
     BILLING_PROFILE_ID: Optional[str] = (
         None  # To restrict to a particular billing profile.
     )
-    CENTRAL_LOGGING_CONNECTION_STRING: Optional[str] = None
 
     # Settings for the settings class itself.
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
