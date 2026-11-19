@@ -1,27 +1,8 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:recommended",
-    ":dependencyDashboard",
-    "schedule:weekly"
+    "github>alan-turing-institute/rctab//renovate/default"
   ],
-  "timezone": "Europe/London",
-  "labels": [
-    "dependencies"
-  ],
-  "minimumReleaseAge": "3 days",
-  "lockFileMaintenance": {
-    "enabled": true,
-    "automerge": true
-  },
-  "pre-commit": {
-    "enabled": true
-  },
-  "vulnerabilityAlerts": {
-    "labels": [
-      "security"
-    ]
-  },
   "customManagers": [
     {
       "description": "CI must test on the Python that Azure Functions runs: take the versions offered for setup-python from the Functions base image tags rather than from python.org",
@@ -66,48 +47,6 @@
       "enabled": false
     },
     {
-      "description": "Automerge low-risk updates once CI passes",
-      "matchUpdateTypes": [
-        "minor",
-        "patch",
-        "pin",
-        "digest"
-      ],
-      "automerge": true
-    },
-    {
-      "description": "One PR for dev tooling",
-      "matchManagers": [
-        "poetry"
-      ],
-      "matchDepTypes": [
-        "dev"
-      ],
-      "matchUpdateTypes": [
-        "minor",
-        "patch"
-      ],
-      "groupName": "dev dependencies"
-    },
-    {
-      "description": "One PR for CI and pre-commit tooling",
-      "matchManagers": [
-        "github-actions",
-        "pre-commit"
-      ],
-      "groupName": "ci tooling"
-    },
-    {
-      "description": "Our own libraries: update all three functions together, as soon as we tag a release, and let a human merge (the functions and the API share these models over the wire)",
-      "matchDepNames": [
-        "rctab_models",
-        "rctab-models"
-      ],
-      "groupName": "rctab internal",
-      "minimumReleaseAge": null,
-      "automerge": false
-    },
-    {
       "description": "Read the Python version from the Azure Functions base image tag, e.g. 4-python3.13-appservice",
       "matchManagers": [
         "dockerfile"
@@ -118,13 +57,13 @@
       "versioning": "regex:^4-python(?<major>\\d+)\\.(?<minor>\\d+)-appservice$"
     },
     {
-      "description": "Python version bumps (CI and base images) are deliberate: one PR, approved from the Dependency Dashboard, never automerged",
+      "description": "Python version bumps (CI and base images) join the preset's python group: one PR, approved from the Dependency Dashboard, never automerged. The image tags have no release timestamp, so minimumReleaseAge would leave them pending forever",
       "matchDepNames": [
-        "python",
         "azure-functions-python",
         "mcr.microsoft.com/azure-functions/python"
       ],
       "groupName": "python",
+      "minimumReleaseAge": null,
       "automerge": false,
       "dependencyDashboardApproval": true
     }
