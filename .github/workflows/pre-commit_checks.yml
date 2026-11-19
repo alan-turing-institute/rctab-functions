@@ -3,13 +3,14 @@
 name: Pre-commit checks
 
 on:
+  pull_request:
   push:
-    branches-ignore:
+    branches:
       - main
 
 jobs:
 
-  pre-commit-job:
+  lint:
 
     runs-on: ubuntu-latest
     timeout-minutes: 30
