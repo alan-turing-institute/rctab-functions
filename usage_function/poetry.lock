@@ -1289,21 +1289,6 @@ spelling = ["pyenchant (>=3.2,<4.0)"]
 testutils = ["gitpython (>3)"]
 
 [[package]]
-name = "pylint-absolute-imports"
-version = "1.1.0"
-description = "Pylint plugin which adds linter error for relatives imports.Read more about imports at https://peps.python.org/pep-0008/#imports"
-optional = false
-python-versions = "*"
-groups = ["dev"]
-files = [
-    {file = "pylint_absolute_imports-1.1.0-py3-none-any.whl", hash = "sha256:3fa7b73481c50cb7e7892d5eeaecf8108ad0ed06d9a545b5c620d20250a1f727"},
-    {file = "pylint_absolute_imports-1.1.0.tar.gz", hash = "sha256:3ea2bb868626c4662b76cb84d541af4e4cc4a355872fa28def72ad4439b31717"},
-]
-
-[package.dependencies]
-pylint = ">=2.5.0,<4"
-
-[[package]]
 name = "python-dotenv"
 version = "1.0.1"
 description = "Read key-value pairs from a .env file and set them as environment variables"
@@ -1589,4 +1574,4 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.13"
-content-hash = "60205811861285e9e55fb6d904cf6027d08fa15e4d50c1b8e8b62626b6145e63"
+content-hash = "47eb0d7fe14c28dbea9f8bfc1a08fece1dedecffdb6688d2d6f2cbd42789526d"
