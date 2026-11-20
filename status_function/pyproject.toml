@@ -20,7 +20,7 @@ pydantic = "^2.11.5"
 pydantic-settings = "^2.9.1"
 PyJWT = {extras = ["crypto"], version = "^2.10.1"}
 requests = "^2.32.3"
-rctab_models = { git = "https://github.com/alan-turing-institute/rctab-models", tag = "0.2.0" }
+rctab_models = { git = "https://github.com/alan-turing-institute/rctab-models", tag = "0.4.0" }
 
 [tool.poetry.group.dev.dependencies]
 coverage = "^7.8.0"
