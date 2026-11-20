@@ -107,8 +107,8 @@ class TestUsageUtils(TestCase):
             mock_tmp = mock_client.return_value
             mock_create = mock_tmp.generate_cost_details_report.begin_create_operation
             mock_result = MagicMock()
-            mock_result.blobs = [MagicMock()]
-            mock_result.blobs[0].blob_link = "https://blob.url"
+            mock_result.manifest.blobs = [MagicMock()]
+            mock_result.manifest.blobs[0].blob_link = "https://blob.url"
             mock_create.return_value.result.return_value = mock_result
 
             jan_tenth = date(2021, 1, 10)
@@ -141,7 +141,7 @@ class TestUsageUtils(TestCase):
             mock_tmp = mock_client.return_value
             mock_create = mock_tmp.generate_cost_details_report.begin_create_operation
             mock_result = MagicMock()
-            mock_result.blobs = [MagicMock()]
+            mock_result.manifest.blobs = [MagicMock()]
             mock_create.return_value.result.return_value = mock_result
 
             jan_tenth = date(2021, 1, 10)

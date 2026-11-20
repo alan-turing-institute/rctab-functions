@@ -70,8 +70,10 @@ def get_all_usage(
         ),
     ).result()
 
-    assert result.blobs, "begin_create_operation().result() contained no blobs"
-    return [b.blob_link for b in result.blobs if b.blob_link]
+    assert result.manifest is not None and result.manifest.blobs, (
+        "begin_create_operation().result() contained no blobs"
+    )
+    return [b.blob_link for b in result.manifest.blobs if b.blob_link]
 
 
 def combine_items(item_to_update: models.Usage, other_item: models.Usage) -> None:

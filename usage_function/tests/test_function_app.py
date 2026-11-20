@@ -315,13 +315,13 @@ class TestCostManagement(TestCase):
             scope = "/providers/Microsoft.Management/managementGroups/ea"
             self.assertEqual(mock_list_func.call_args_list[0].kwargs["scope"], scope)
             self.assertEqual(
-                mock_list_func.call_args_list[0].kwargs["parameters"].serialize(),
-                parameters1.serialize(),
+                mock_list_func.call_args_list[0].kwargs["parameters"].as_dict(),
+                parameters1.as_dict(),
             )
             self.assertEqual(mock_list_func.call_args_list[1].kwargs["scope"], scope)
             self.assertEqual(
-                mock_list_func.call_args_list[1].kwargs["parameters"].serialize(),
-                parameters2.serialize(),
+                mock_list_func.call_args_list[1].kwargs["parameters"].as_dict(),
+                parameters2.as_dict(),
             )
             self.assertEqual(mock_list_func.call_count, 2)
 
