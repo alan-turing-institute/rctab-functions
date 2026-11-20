@@ -8,7 +8,6 @@ from unittest.mock import MagicMock
 
 import pydantic
 
-
 # Patch Pydantic so that missing doen't cause errors
 
 pydantic.BaseSettings = MagicMock()
