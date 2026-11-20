@@ -24,8 +24,8 @@ rctab_models = { git = "https://github.com/alan-turing-institute/rctab-models", 
 
 [tool.poetry.group.dev.dependencies]
 coverage = "^7.8.0"
-isort = "^6.0.1"
-mypy = "^1.15.0"
+isort = "^9.0.0"
+mypy = "^2.0.0"
 pylint = "^4.0.0"
 types-requests = "^2.32.0.20250328"
 
