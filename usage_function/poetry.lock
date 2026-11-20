@@ -177,31 +177,31 @@ azure-core = ">=1.32.0"
 
 [[package]]
 name = "azure-mgmt-costmanagement"
-version = "4.0.1"
-description = "Microsoft Azure Cost Management Client Library for Python"
+version = "5.0.0"
+description = "Microsoft Azure Costmanagement Management Client Library for Python"
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "azure-mgmt-costmanagement-4.0.1.zip", hash = "sha256:a95734102450b6f01aaa938d78c00285b90fc52b866caae17efb5521ae986db7"},
-    {file = "azure_mgmt_costmanagement-4.0.1-py3-none-any.whl", hash = "sha256:23e77373427555e880ce938d468f87c6a8d66a5b237d7b2b0270bb192d61586f"},
+    {file = "azure_mgmt_costmanagement-5.0.0-py3-none-any.whl", hash = "sha256:c4a6d25ebead9b68f8c05b3aed8630416acf9a9752e6c49c982bd4ca62400d69"},
+    {file = "azure_mgmt_costmanagement-5.0.0.tar.gz", hash = "sha256:ca0a9c1394052b1ec07afc3826f0f3d84fe7419b65c7ebfe9ae9de4e3ab62696"},
 ]
 
 [package.dependencies]
-azure-common = ">=1.1,<2.0"
-azure-mgmt-core = ">=1.3.2,<2.0.0"
-isodate = ">=0.6.1,<1.0.0"
+azure-mgmt-core = ">=1.6.0"
+isodate = ">=0.6.1"
+typing-extensions = ">=4.6.0"
 
 [[package]]
 name = "azure-mgmt-managementgroups"
-version = "1.1.0"
+version = "2.0.0"
 description = "Microsoft Azure Managementgroups Management Client Library for Python"
 optional = false
-python-versions = ">=3.9"
+python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "azure_mgmt_managementgroups-1.1.0-py3-none-any.whl", hash = "sha256:140934589559ef6afcac6f1d24f995588a1965aaa89d47851c1cc639fafb1942"},
-    {file = "azure_mgmt_managementgroups-1.1.0.tar.gz", hash = "sha256:e6199baf118890ba2bda35dda83a88861c0b1bbef126311b20ec12eed9681951"},
+    {file = "azure_mgmt_managementgroups-2.0.0-py3-none-any.whl", hash = "sha256:d8461e05c4da0010adb6bfc935f1364ad04c20bdbaafc80ef5a9756b9ac2bdc4"},
+    {file = "azure_mgmt_managementgroups-2.0.0.tar.gz", hash = "sha256:02d008fadfd7610b1c7059e3c3a8a33dedaef4b654749b81978b437baf264f1d"},
 ]
 
 [package.dependencies]
@@ -2015,4 +2015,4 @@ watchdog = ["watchdog (>=2.3)"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.13"
-content-hash = "9497288f5a34bec4abdbf9363c5ad9c95eed7e863b4b66ded0a67687b589bf90"
+content-hash = "d08333b125d4f56b656282cb712c6274ce3ae9de90643c7543753d01f248b353"

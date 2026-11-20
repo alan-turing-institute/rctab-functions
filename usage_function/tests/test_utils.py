@@ -107,8 +107,8 @@ class TestUsageUtils(TestCase):
             mock_tmp = mock_client.return_value
             mock_create = mock_tmp.generate_cost_details_report.begin_create_operation
             mock_result = MagicMock()
-            mock_result.blobs = [MagicMock()]
-            mock_result.blobs[0].blob_link = "https://blob.url"
+            mock_result.manifest.blobs = [MagicMock()]
+            mock_result.manifest.blobs[0].blob_link = "https://blob.url"
             mock_create.return_value.result.return_value = mock_result
 
             jan_tenth = date(2021, 1, 10)
@@ -141,7 +141,7 @@ class TestUsageUtils(TestCase):
             mock_tmp = mock_client.return_value
             mock_create = mock_tmp.generate_cost_details_report.begin_create_operation
             mock_result = MagicMock()
-            mock_result.blobs = [MagicMock()]
+            mock_result.manifest.blobs = [MagicMock()]
             mock_create.return_value.result.return_value = mock_result
 
             jan_tenth = date(2021, 1, 10)
@@ -273,15 +273,12 @@ class TestUsageUtils(TestCase):
 
         def mock_readinto(open_file: BinaryIO) -> None:
             """To replace that of the StorageStreamDownloader."""
-            text_stream = TextIOWrapper(
+            with TextIOWrapper(
                 open_file, encoding="utf-8", newline="", write_through=True
-            )
-
-            writer = csv.DictWriter(text_stream, fieldnames=self.cost_detail.keys())
-            writer.writeheader()
-            writer.writerow(self.cost_detail)
-
-            text_stream.flush()
+            ) as text_stream:
+                writer = csv.DictWriter(text_stream, fieldnames=self.cost_detail.keys())
+                writer.writeheader()
+                writer.writerow(self.cost_detail)
 
         with patch("utils.usage.BlobClient", autospec=True) as client:
             blob = client.from_blob_url.return_value
