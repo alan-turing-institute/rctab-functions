@@ -273,15 +273,12 @@ class TestUsageUtils(TestCase):
 
         def mock_readinto(open_file: BinaryIO) -> None:
             """To replace that of the StorageStreamDownloader."""
-            text_stream = TextIOWrapper(
+            with TextIOWrapper(
                 open_file, encoding="utf-8", newline="", write_through=True
-            )
-
-            writer = csv.DictWriter(text_stream, fieldnames=self.cost_detail.keys())
-            writer.writeheader()
-            writer.writerow(self.cost_detail)
-
-            text_stream.flush()
+            ) as text_stream:
+                writer = csv.DictWriter(text_stream, fieldnames=self.cost_detail.keys())
+                writer.writeheader()
+                writer.writerow(self.cost_detail)
 
         with patch("utils.usage.BlobClient", autospec=True) as client:
             blob = client.from_blob_url.return_value
