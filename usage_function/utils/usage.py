@@ -70,9 +70,9 @@ def get_all_usage(
         ),
     ).result()
 
-    assert result.manifest is not None and result.manifest.blobs, (
-        "begin_create_operation().result() contained no blobs"
-    )
+    assert (
+        result.manifest is not None and result.manifest.blobs
+    ), "begin_create_operation().result() contained no blobs"
     return [b.blob_link for b in result.manifest.blobs if b.blob_link]
 
 
