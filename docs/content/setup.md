@@ -9,6 +9,7 @@ The general process to install dependencies and run the function apps is outline
 
 1. [Install poetry](https://python-poetry.org/docs/#osx--linux--bashonwindows-install-instructions).
   This is used to manage virtual environments and package dependencies.
+  Each app's `pyproject.toml` sets a minimum Poetry version (`requires-poetry`), so upgrade Poetry if it refuses to run.
 1. Install pyenv (e.g. with `brew install pyenv`).
   This is optional but useful for matching Python versions between development and production.See [here](https://blog.jayway.com/2019/12/28/pyenv-poetry-saviours-in-the-python-chaos/) for more detailed instructions.
 1. Install pre-commit (e.g. with `brew install pre-commit`).

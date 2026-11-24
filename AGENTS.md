@@ -46,6 +46,9 @@ setup, and `run_now.py` (or `run_usage.py` etc.) a local runner.
   pydocstyle, pymarkdown, gitleaks).
 - If you change a dependency, commit the updated `poetry.lock`; CI runs
   `poetry check --lock`.
+- `requires-poetry` in each `pyproject.toml` is a minimum Poetry version that
+  nothing updates automatically; bump it by hand, in all three apps, only when
+  we need a newer Poetry feature.
 - Do not change the `version` field in a `pyproject.toml` — it is fixed at
   `0.1.0` and releases are identified by git tag.
 - Never commit secrets or a real `.env`; gitleaks runs in pre-commit and CI.
