@@ -51,9 +51,7 @@ GitHub Actions mirrors the above:
 
 * `test.yml` runs `poetry check --lock`, `poetry install` and
   `poetry run ./run_tests.sh` for each of the three apps on every pull request
-  and on pushes to `main`. It has no path filters, so the required
-  `test (<function>)` checks always report and Renovate PRs that touch several
-  apps can be automerged.
+  and on pushes to `main`.
 * `pre-commit_checks.yml` runs the pre-commit hooks.
 * `gitleaks.yml` scans the full history for secrets.
 * `test_build.yml` builds each app's Docker image on pull requests and pushes
@@ -96,8 +94,5 @@ GitHub Actions mirrors the above:
   CI fails on `poetry check --lock` otherwise.
 * Each app's `pyproject.toml` sets the oldest Poetry that may work on it,
   with `requires-poetry` under `[tool.poetry]`, and Poetry refuses to run if
-  it is older. This stops an old Poetry rewriting `poetry.lock`: Renovate
-  relocks with the Poetry version named in the lock file, and older versions
-  ignore Renovate's minimum release age. Nothing updates this floor
-  automatically, so bump it by hand in all three apps when we need a newer
-  Poetry feature.
+  it is older. Nothing updates this floor automatically, so bump it by hand
+  in all three apps when we need a newer Poetry feature.
