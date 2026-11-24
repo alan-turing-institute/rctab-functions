@@ -49,14 +49,17 @@ pre-commit run --all-files
 
 GitHub Actions mirrors the above:
 
-* `linting_usage.yml`, `linting_status.yml` and `linting_controller.yml` each
-  run `poetry check --lock`, `poetry install` and `poetry run ./run_tests.sh`
-  for one app, on pushes to any branch except `main`, and only when that app's
-  directory (or `.github/workflows/`) has changed.
+* `test.yml` runs `poetry check --lock`, `poetry install` and
+  `poetry run ./run_tests.sh` for each of the three apps on every pull request
+  and on pushes to `main`. It has no path filters, so the required
+  `test (<function>)` checks always report and Renovate PRs that touch several
+  apps can be automerged.
 * `pre-commit_checks.yml` runs the pre-commit hooks.
 * `gitleaks.yml` scans the full history for secrets.
 * `test_build.yml` builds each app's Docker image on pull requests and pushes
   to `main`, to check the images can still be built.
+* `deploy.yml` builds each app's image and pushes it to Docker Hub when a
+  GitHub release is published; see [Releasing](releasing.md).
 * The workflows install an exact Poetry version, so a new Poetry release
   can't change CI results unannounced. Renovate bumps it in the CI tooling PR,
   using a rule in the shared RCTab preset.
