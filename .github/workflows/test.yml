@@ -40,7 +40,7 @@ jobs:
         run: |
           python -m ensurepip
           python -m pip install --upgrade pip
-          python -m pip install poetry
+          python -m pip install poetry==2.5.1
 
       # run_tests.sh activates .venv, and the cache below saves it
       - name: Configure poetry

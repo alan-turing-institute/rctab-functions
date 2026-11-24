@@ -57,6 +57,9 @@ GitHub Actions mirrors the above:
 * `gitleaks.yml` scans the full history for secrets.
 * `test_build.yml` builds each app's Docker image on pull requests and pushes
   to `main`, to check the images can still be built.
+* The workflows install an exact Poetry version, so a new Poetry release
+  can't change CI results unannounced. Renovate bumps it in the CI tooling PR,
+  using a rule in the shared RCTab preset.
 
 ## Coding conventions
 
