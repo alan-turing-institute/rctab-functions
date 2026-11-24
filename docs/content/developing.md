@@ -88,3 +88,10 @@ GitHub Actions mirrors the above:
   over redefining a payload shape locally.
 * Dependency changes go through Poetry so that `poetry.lock` stays consistent;
   CI fails on `poetry check --lock` otherwise.
+* Each app's `pyproject.toml` sets the oldest Poetry that may work on it,
+  with `requires-poetry` under `[tool.poetry]`, and Poetry refuses to run if
+  it is older. This stops an old Poetry rewriting `poetry.lock`: Renovate
+  relocks with the Poetry version named in the lock file, and older versions
+  ignore Renovate's minimum release age. Nothing updates this floor
+  automatically, so bump it by hand in all three apps when we need a newer
+  Poetry feature.
